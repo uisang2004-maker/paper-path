@@ -4,8 +4,10 @@
 외형은 docs/design/paperpath-v03, 기능은 docs/PLAN.md를 따른다.
 """
 
+import base64
 import hashlib
 import html
+import io
 import os
 import re
 import time
@@ -326,6 +328,18 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-subhead { margin:14px 0 2px; padding:4px 10px; font-size:13.5px; font-weight:750; color:#152c49;
   border-left:3px solid #3979b5; background:#f3f8fd; border-radius:0 6px 6px 0; }
 .pp-subhead:first-child { margin-top:2px; }
+/* 저장된 문서 카드 */
+.pp-doc-card { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface); }
+.pp-doc-thumb { height:118px; background-color:#f4f7fb; background-size:contain; background-repeat:no-repeat;
+  background-position:center; border-bottom:1px solid #edf1f6; }
+.pp-doc-blank { display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:800; color:#9fb6cf;
+  background:linear-gradient(135deg, #eaf3fc, #f7fafd); }
+.pp-doc-body { padding:9px 11px 6px; }
+.pp-doc-title { font-size:13.5px; font-weight:750; color:#152c49; line-height:1.35; display:-webkit-box;
+  -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.7em; }
+.pp-doc-last { font-size:12px; color:#3979b5; font-weight:650; margin-top:3px; }
+.pp-resume { font-size:14px; color:#152c49; }
+.st-key-resume_box { background:#eef5fd; border:1px solid #cfe0f2; border-radius:10px; padding:6px 12px; }
 .pp-jump { margin-left:10px; font-size:12px; font-weight:700; color:#3979b5; text-decoration:none; white-space:nowrap; }
 #pp-03 { scroll-margin-top:72px; }
 .pp-proto-list { margin:6px 0 0; padding-left:0; list-style:none; }
@@ -488,6 +502,7 @@ def on_page_change() -> None:
     if ss.paper_page is not None:          # 같은 버튼을 다시 눌러 선택이 풀리면 지금 쪽을 유지
         ss.paper_cur = ss.paper_page
     set_view()
+    track_position(new_section=True)
 
 
 def pick_section() -> None:
@@ -495,6 +510,7 @@ def pick_section() -> None:
     if ss.section_pick is not None:
         ss.body_cur = ss.section_pick
     set_view()
+    track_position(new_section=True)
 
 
 def set_show_input(on: bool) -> None:
@@ -565,6 +581,27 @@ def rule_summary(a) -> None:
     st.caption("각 규칙의 정규식·예시·일부러 놓치는 경우는 위 '규칙 탐색' 탭에 있어요.")
 
 
+DOC_CARDS_PER_ROW = 3
+
+
+def doc_card(d: dict) -> str:
+    """저장 문서 카드 HTML: 대표 그림(없으면 제목 첫 글자 판), 제목 두 줄, 종류·날짜·번역 진행, 지난 위치."""
+    done, total = doc_progress(d)
+    when = time.strftime("%m/%d %H:%M", time.localtime(d.get("ts", 0)))
+    kind = {"pdf": "PDF", "arxiv": "arXiv", "paste": "붙여 넣은 글"}[d["kind"]]
+    title = d.get("title") or "제목 없음"
+    thumb = d.get("thumb") or ""
+    if thumb.startswith("data:image/jpeg;base64,"):
+        pic = f'<div class="pp-doc-thumb" style="background-image:url({thumb})"></div>'
+    else:
+        initial = next((ch for ch in title if ch.isalnum()), "P").upper()
+        pic = f'<div class="pp-doc-thumb pp-doc-blank">{esc(initial)}</div>'
+    last = (d.get("last") or {}).get("label")
+    where = f'<div class="pp-doc-last">지난번: {esc(last)}</div>' if last else ""
+    return (f'<div class="pp-doc-card">{pic}<div class="pp-doc-body"><div class="pp-doc-title" title="{esc(title)}">'
+            f'{esc(title)}</div><div class="pp-meta">{kind} · {when} · 번역 {done}/{total}쪽</div>{where}</div></div>')
+
+
 def saved_panel() -> None:
     """입력 칸 아래: 이 브라우저에 저장된 결과 수, 지우기(A), 결과 파일 불러오기(B)."""
     ss = st.session_state
@@ -583,17 +620,17 @@ def saved_panel() -> None:
             st.warning(ss.account_msg)
         elif current_user():
             st.caption(f"내 계정 동기화: 문서 {len(ss.account_docs)}개 · 번역·뜻 풀이 글 {len(ss.account_sig)}개가 계정에 있어요.")
-        for d in docs[:SV.MAX_DOCS]:
-            done, total = doc_progress(d)
-            when = time.strftime("%m/%d %H:%M", time.localtime(d.get("ts", 0)))
-            kind = {"pdf": "PDF", "arxiv": "arXiv", "paste": "붙여 넣은 글"}[d["kind"]]
-            c1, c2, c3 = st.columns([5, 1.1, 0.7], vertical_alignment="center")
-            c1.markdown(f'<div class="pp-doc"><b>{esc(d.get("title") or "제목 없음")[:90]}</b>'
-                        f'<div class="pp-meta">{kind} · {when} · 번역 {done}/{total}쪽</div></div>', unsafe_allow_html=True)
-            c2.button("다시 열기", key=f"doc_open_{d['id']}", on_click=open_doc, args=(d["id"],),
-                      type="primary" if done else "secondary", use_container_width=True)
-            c3.button("삭제", key=f"doc_del_{d['id']}", on_click=delete_doc, args=(d["id"],), type="tertiary",
-                      use_container_width=True)
+        shown_docs = docs[:SV.MAX_DOCS]
+        for row in range(0, len(shown_docs), DOC_CARDS_PER_ROW):   # 한 줄에 카드 3장: 대표 그림 · 제목 · 진행 · 지난 위치
+            cols = st.columns(DOC_CARDS_PER_ROW)
+            for col, d in zip(cols, shown_docs[row:row + DOC_CARDS_PER_ROW]):
+                with col.container(key=f"doc_card_{d['id']}"):
+                    st.markdown(doc_card(d), unsafe_allow_html=True)
+                    b1, b2 = st.columns([1.6, 1])
+                    b1.button("이어서 보기" if d.get("last") else "열기", key=f"doc_open_{d['id']}", on_click=open_doc,
+                              args=(d["id"],), type="primary", use_container_width=True)
+                    b2.button("삭제", key=f"doc_del_{d['id']}", on_click=delete_doc, args=(d["id"],), type="tertiary",
+                              use_container_width=True)
         st.file_uploader("결과 파일 불러오기(.json)", type=["json"], key="saved_file", on_change=on_saved_upload)
         if ss.get("saved_msg"):
             st.success(ss.saved_msg)
@@ -659,12 +696,74 @@ def open_doc(doc_id: str) -> None:
             ss.pop(k, None)
         ss.source = {"kind": "pdf", "title": paper.title}
         set_view()
+        last = rec.get("last")
+        ss.resume_offer = ({"doc": doc_id, **last}
+                           if last and (last.get("page") != PAPER_PAGES[0] or last.get("body") or last.get("part")) else None)
     else:
+        ss.resume_offer = None
         ss.paper = None
         ss.input_text = rec["sections"][0]["text"]
         ss.source = ({"kind": "arxiv", "id": rec.get("arxiv_id", ""), "title": rec.get("title", "")}
                      if rec["kind"] == "arxiv" else {"kind": "paste"})
     ss.show_input = False
+
+
+def resume_reading() -> None:
+    """'이어서 보기': 지난번에 보던 쪽·절·부분·읽기 모드로 옮긴다."""
+    ss = st.session_state
+    last = ss.pop("resume_offer", None)
+    if not last or ss.get("paper") is None:
+        return
+    pages = paper_pages(ss.paper)
+    ss.paper_cur = last.get("page") if last.get("page") in pages else next(iter(pages))
+    ss.body_cur = int(last.get("body") or 0)
+    for k in ("paper_page", "section_pick"):
+        ss.pop(k, None)
+    set_view()
+    ss.part_resume = int(last.get("part") or 0)
+    if last.get("mode") in READ_MODES:
+        ss.read_mode = last["mode"]
+    rec = ss.browser_docs.get(last.get("doc") or "")
+    if rec:                                # 이어 본 위치를 그대로 지난 위치로 둔다(부분 수는 다음 화면에서 채워짐)
+        ss.browser_docs[rec["id"]] = {**rec, "last": {k: v for k, v in last.items() if k != "doc"}}
+
+
+def dismiss_resume() -> None:
+    st.session_state.resume_offer = None
+
+
+def resume_prompt() -> None:
+    """다시 연 문서에 지난 위치가 있으면 맨 위에 '이어서 보시겠어요?'(스크롤 위치는 기억하지 못해 그 부분의 처음으로)."""
+    last = st.session_state.get("resume_offer")
+    if not last:
+        return
+    with st.container(key="resume_box"):
+        c1, c2, c3 = st.columns([4, 1.1, 0.9], vertical_alignment="center")
+        c1.markdown(f'<div class="pp-resume">지난번에 <b>{esc(last.get("label") or "본문")}</b>까지 읽었어요. '
+                    f'이어서 보시겠어요?</div>', unsafe_allow_html=True)
+        c2.button("이어서 보기", key="resume_yes", type="primary", on_click=resume_reading, use_container_width=True)
+        c3.button("처음부터", key="resume_no", on_click=dismiss_resume, use_container_width=True)
+
+
+def track_position(new_section: bool = False, user: bool = True) -> None:
+    """지금 읽는 위치(쪽·절·부분·읽기 모드)를 문서 기록에 남긴다. 바뀔 때만 저장(브라우저·내 계정).
+    이동 버튼의 콜백에서 부른다: 콜백은 화면을 그리기 전에 돌아서, 같은 실행의 브라우저 저장에 바로 실린다
+    (화면을 다 그린 뒤 부르면 브라우저 저장이 이미 끝나 한 번 늦게 저장됐다). new_section이면 새 절의 첫 부분.
+    user: 사용자가 직접 옮긴 것(이어 보기 물음은 닫는다)."""
+    ss = st.session_state
+    if user:
+        ss.resume_offer = None
+    rec = ss.browser_docs.get(ss.get("current_doc") or "")
+    if not rec or rec.get("kind") != "pdf" or ss.get("paper") is None or ss.get("resume_offer"):
+        return
+    part = 0 if new_section else (ss.get("part_pick") or 0)
+    parts_n = 0 if new_section else ss.get("parts_n", 0)
+    label = ss.source.get("section", "") + (f" ({part + 1}/{parts_n} 부분)" if parts_n else "")
+    pos = {"page": ss.paper_cur, "body": ss.body_cur, "part": part, "mode": ss.get("read_mode"), "label": label}
+    if rec.get("last") != pos:
+        rec = {**rec, "last": pos}
+        ss.browser_docs[rec["id"]] = rec
+        ss.docs_pending[rec["id"]] = rec
 
 
 def delete_doc(doc_id: str) -> None:
@@ -759,6 +858,32 @@ def on_pdf_drop() -> None:
         ss.input_error = load_pdf(f.getvalue(), f.name)
 
 
+THUMB_SIZE = (360, 220)               # 저장 문서 카드의 대표 그림 크기(px)
+THUMB_MAX_BYTES = 40_000              # 이보다 크면 저장하지 않는다(브라우저 저장 공간)
+
+
+def doc_thumb(figures) -> str:
+    """저장 문서 카드에 쓸 대표 그림: 4쪽 안의 Figure 1, 없으면 1~2쪽에서 가장 큰 그림을 작은 JPEG(data URI)로.
+    대개 논문 맨 앞의 큰 그림이 그 논문을 대표한다. 찾지 못하면 빈 글자."""
+    from PIL import Image
+
+    usable = [t for t in figures if t.png and not t.whole_page]
+    first = [t for t in usable if t.num == 1 and t.page <= 4]
+    early = [t for t in usable if t.page <= 2]
+    pick = first[0] if first else (max(early, key=lambda t: t.width * t.height) if early else None)
+    if pick is None:
+        return ""
+    try:
+        im = Image.open(io.BytesIO(pick.png)).convert("RGB")
+        im.thumbnail(THUMB_SIZE)
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=70, optimize=True)
+    except Exception:
+        return ""
+    uri = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+    return uri if len(uri) <= THUMB_MAX_BYTES else ""
+
+
 def load_pdf(data: bytes, name: str) -> str | None:
     """PDF → 절 나누기. 실패하면 화면에 보여 줄 이유를 돌려준다."""
     ss = st.session_state
@@ -788,10 +913,13 @@ def load_pdf(data: bytes, name: str) -> str | None:
     ss.source = {"kind": "pdf", "title": paper.title}
     set_view()
     ss.show_input = False
+    extra = {"notes": paper.notes}
+    thumb = doc_thumb(ss.paper_figures)
+    if thumb:
+        extra["thumb"] = thumb
     remember_doc(SV.doc_record("pdf", paper.title or name,
                                [{"title": s.title, "text": s.text, "subheads": s.subheads, "sub_at": s.sub_at}
-                                for s in paper.sections],
-                               {"notes": paper.notes}), current=True)
+                                for s in paper.sections], extra), current=True)
     return None
 
 
@@ -1837,11 +1965,17 @@ def part_picker(a) -> list[tuple[str, int, int]]:
     key = text_key(a.text)
     parts = reading_parts(a)
     if not parts:
+        ss.pop("part_resume", None)
+        ss.parts_n = 0
         ss.part_range = {key: (0, len(a.sentences))}
         return []
-    if ss.get("part_of") != key or ss.get("part_pick") is None or ss.part_pick >= len(parts):
+    if "part_resume" in ss:                 # '이어서 보기'로 연 부분
+        ss.part_of = key
+        ss.part_pick = min(ss.pop("part_resume"), len(parts) - 1)
+    elif ss.get("part_of") != key or ss.get("part_pick") is None or ss.part_pick >= len(parts):
         ss.part_of = key
         ss.part_pick = ss.get("part_last", 0) if ss.get("part_of_last") == key else 0
+    ss.parts_n = len(parts)
     by_sub = not parts[0][0].startswith("문장 ")
     labels = {k: f"{name} · {hi - lo}문장" for k, (name, lo, hi) in enumerate(parts)}
     with st.container(key="part_bar"):
@@ -1851,10 +1985,10 @@ def part_picker(a) -> list[tuple[str, int, int]]:
         st.caption("번역·형광펜·뼈대는 글 전체 기준이에요. 아래 ◀ ▶ 버튼으로도 넘길 수 있어요.")
         if len(parts) > PART_PILLS_MAX:    # 부분이 많으면 버튼이 여러 줄로 쌓이므로 드롭다운 하나로
             st.selectbox("읽을 부분", list(range(len(parts))), format_func=labels.get, key="part_pick",
-                         label_visibility="collapsed")
+                         label_visibility="collapsed", on_change=track_position)
         else:
             st.pills("읽을 부분", list(range(len(parts))), format_func=labels.get, key="part_pick",
-                     label_visibility="collapsed")
+                     label_visibility="collapsed", on_change=track_position)
     k = ss.part_pick if ss.part_pick is not None else 0
     ss.part_last, ss.part_of_last = k, key
     ss.part_range = {key: parts[k][1:]}
@@ -1868,6 +2002,7 @@ def part_picker(a) -> list[tuple[str, int, int]]:
 def go_part(k: int) -> None:
     st.session_state.part_pick = k
     st.session_state.part_scroll = True      # 글 아래 버튼으로 넘기면 새 부분의 처음으로 올라간다
+    track_position()
 
 
 def part_nav_buttons(parts) -> None:
@@ -2106,6 +2241,7 @@ def reading_page() -> None:
         rules.discard("SK_FALLBACK")       # 본문 절의 첫 문장은 '분야 배경'이 아니므로 위치로 대신 고르지 않는다
     a = analyze(ss.input_text, frozenset(rules))
     loaded_bar(a)
+    resume_prompt()
     if ss.paper is not None and ss.source["kind"] == "pdf":
         paper_overview(ss.paper)
     ss.term_tips = {text_key(a.text): term_meanings(a, ss.translations.get((text_key(a.text), True)))}
@@ -2147,7 +2283,7 @@ def reading_page() -> None:
     ss.setdefault("read_mode", READ_MODES[0])
     with st.container(key="read_mode_bar"):
         st.segmented_control("읽기 모드", READ_MODES, key="read_mode", format_func=lambda m: READ_MODE_LABEL[m],
-                             label_visibility="collapsed")
+                             label_visibility="collapsed", on_change=track_position)
     mode = ss.read_mode or READ_MODES[0]       # 같은 버튼을 다시 눌러 선택이 풀려도 기본 모드로 보여 준다
     parts = part_picker(a)                     # 긴 글은 소제목(없으면 30문장) 단위로 나눠 읽는다
     uls = card_underlines(a)
@@ -2180,6 +2316,7 @@ def reading_page() -> None:
     if parts:
         part_nav_buttons(parts)            # 이전·다음은 본문 바로 끝에
     st.markdown('<hr class="pp-end">', unsafe_allow_html=True)   # 본문 끝과 03 보조 자료를 나누는 선
+    track_position(user=False)             # 처음 연 위치 등 콜백 없이 바뀐 위치(다음 실행의 브라우저 저장에 실림)
 
     st.markdown('<div id="pp-03"></div>' + sec_head("03", "이해를 돕는 자료", "흐름도·단어표 — 정규식이 찾은 결과를 한눈에 모은 것"),
                 unsafe_allow_html=True)

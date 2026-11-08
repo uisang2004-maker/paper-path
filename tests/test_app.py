@@ -525,3 +525,50 @@ def test_materials_section_shows_found_cards_first(blank):
     assert i_caution < i_reagent and "<b>Bovine bile</b>" in out and "<b>NaOH</b>" in out
     assert "멈춤 지점 · PAUSE POINT" in out and out.index("멈춤 지점 · PAUSE POINT") > i_reagent   # 빈 카드는 뒤로
     assert re.search(r'<span class="pp-cat">\(.*?cat\. no\. B3883\)</span>', out)            # 품번은 흐리게
+
+
+def test_resume_where_left_off(blank):
+    """다시 연 문서에 지난 위치가 있으면 '이어서 보시겠어요?' → 그 쪽·절·부분·읽기 모드로."""
+    from src import saved as SV
+    rec = SV.doc_record("pdf", "A Protocol Paper", protocol_sections(),
+                        {"last": {"page": "본문", "body": 1, "part": 1, "mode": "en", "label": "본문 › Procedure (2/2 부분)"}})
+    blank.session_state["browser_docs"] = {rec["id"]: rec}
+    blank.run()
+    out = md_text(blank)
+    assert "지난번: 본문 › Procedure (2/2 부분)" in out and 'pp-doc-blank">A<' in out   # 카드: 그림 없으면 첫 글자
+    assert any(b.label == "이어서 보기" for b in blank.button)
+    blank.button(key=f"doc_open_{rec['id']}").click().run()
+    assert "이어서 보시겠어요?" in md_text(blank)
+    blank.button(key="resume_yes").click().run()
+    assert not blank.exception
+    ss = blank.session_state
+    assert ss["source"]["section"] == "본문 › Procedure" and ss["read_mode"] == "en" and ss["part_pick"] == 1
+    assert 'class="pp-no">25<' in md_text(blank)                       # 두 번째 부분(20번째 단계부터)
+
+
+def test_reading_position_is_saved(blank):
+    at = open_paper_doc(blank, protocol_sections())
+    next(g for g in at.get("button_group") if g.key == "paper_page").set_value("본문").run()
+    next(g for g in at.get("button_group") if g.key == "section_pick").set_value(1).run()
+    rec = next(iter(at.session_state["browser_docs"].values()))
+    assert rec["last"]["page"] == "본문" and rec["last"]["body"] == 1
+    assert rec["last"]["label"].startswith("본문 › Procedure")
+
+
+def test_doc_thumb_prefers_figure_one():
+    import io as _io
+    from PIL import Image
+    from app import doc_thumb
+    from src.tables import TableInfo
+
+    def png(w, h):
+        buf = _io.BytesIO()
+        Image.new("RGB", (w, h), (200, 210, 230)).save(buf, "PNG")
+        return buf.getvalue()
+    figs = [TableInfo(2, "Figure 2: big", 1, png(800, 600), kind="figure", width=800, height=600),
+            TableInfo(1, "Figure 1: teaser", 3, png(600, 300), kind="figure", width=600, height=300)]
+    uri = doc_thumb(figs)
+    assert uri.startswith("data:image/jpeg;base64,") and len(uri) < 40_000
+    im = Image.open(_io.BytesIO(__import__("base64").b64decode(uri.split(",", 1)[1])))
+    assert im.size == (360, 180)                                         # 3쪽의 Figure 1을 골라 360px로 줄임
+    assert doc_thumb([]) == ""
