@@ -429,10 +429,11 @@ ARXIV_ID = re.compile(
 
 SEC_NUM_HEAD = re.compile(
     r"^(?P<num>(?P<top>\d{1,2}|[IVX]{1,5})(?P<sub>(?:\.\d{1,2}){0,2})\.?)\s+"
-    r"(?P<title>[A-Z][A-Za-z0-9\-–’' ,:&()/]{1,80})$"
+    r"(?P<title>[A-Z][A-Za-z0-9\-–’' ,:&()/]{1,80}?)(?P<dot>\.)?$"
 )
 """번호가 붙은 절 제목 줄: ``1 Introduction``, ``3.2 Pre-training BERT``, ``1. Introduction``, ``II. RELATED WORK``.
-제목에는 마침표가 없어야 한다(문장·참고문헌 줄과 구별). 표의 숫자 줄과 헷갈리지 않도록 절 번호가 1, 2, 3…
+제목에는 마침표가 없어야 한다(문장·참고문헌 줄과 구별). 다만 ``6.2 Qualitative Feedback.``처럼 소절 번호(점이 있는
+번호)가 붙은 제목은 끝 마침표 하나를 허용한다(ACM 양식). 표의 숫자 줄과 헷갈리지 않도록 절 번호가 1, 2, 3…
 차례로 이어질 때만 받아들인다(src/sections.py)."""
 
 SEC_NAMED_HEAD = re.compile(

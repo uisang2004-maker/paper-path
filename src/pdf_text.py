@@ -27,7 +27,12 @@ SMALL_GAP = 0.9           # 본문 글자보다 이만큼(pt) 이상 작은 줄�
 SMALL_MARK = "\x1f"       # 작은 글자 줄 앞에 붙이는 표시(src/sections.py가 보고 뗀다)
 HEAD_MARK = "\x1e"        # 본문보다 큰 굵은 글꼴 줄(절 제목 후보)
 SUB_MARK = "\x1d"         # 본문 크기의 굵은 글꼴 줄(소제목 후보)
-MARKS = SMALL_MARK + HEAD_MARK + SUB_MARK
+RUNIN_MARK = "\x1c"       # 문단 첫머리에 굵게 붙은 제목('Separated. We considered …'): 표시 + 제목 + RUNIN_SEP + 나머지
+RUNIN_SEP = "\x1b"
+MARKS = SMALL_MARK + HEAD_MARK + SUB_MARK + RUNIN_MARK
+RUNIN_MAX_WORDS = 10      # 문단 첫머리 굵은 제목의 최대 낱말 수
+RUNIN_NOT = re.compile(r"^(?:Fig(?:ure)?|Table|Algorithm|Eq(?:uation)?|Step|Note)\b", re.I)   # 그림·표 설명 첫머리 등은 제목이 아님
+SENT_DONE = re.compile(r"[.!?:)\]”\"']\s*$")
 HEAD_GAP = 0.5            # 본문보다 이만큼(pt) 이상 크면 절 제목 후보, 아니면 소제목 후보
 BOLD_FONT = re.compile(r"bold|black|heavy|semibold|demi|medi(?:um)?\b|[-_,](?:b|bd|bx|hev)\b|cmbx", re.I)
 ITALIC_FONT = re.compile(r"ital|obli|[-_.](?:i|it|lightit)$", re.I)
@@ -88,9 +93,21 @@ def _font(w: dict) -> str:
 SYMBOL_WORD = re.compile(r"[^\w]+")      # 글자·숫자가 없는 낱말(●, •): 줄 글꼴을 정할 때 뺀다
 
 
+def _lead(ws: list[dict]) -> tuple | None:
+    """줄 첫머리에서 같은 글꼴로 이어지는 낱말들과 나머지: (앞 글자, 앞 글꼴, 나머지 글자, 나머지 첫 글꼴). 한 글꼴이면 None.
+    문단 첫머리 굵은 제목('Separated. We considered …')을 찾는 데 쓴다."""
+    first = _font(ws[0])
+    for k in range(1, len(ws)):
+        f = _font(ws[k])
+        if f != first and not (SYMBOL_WORD.fullmatch(ws[k]["text"]) and len(ws[k]["text"]) == 1 and ws[k]["text"] in ".:"):
+            return _text(ws[:k]), first, _text(ws[k:]), f
+    return None
+
+
 def _line(ws: list[dict], partner: str | None = None) -> tuple:
     """(아랫선, 글자 크기 중앙값, 줄 글자, 가장 큰 글자 크기, 줄 전체가 한 글꼴이면 그 이름 아니면 "", 왼쪽 끝 x,
-    반대쪽 칸 글꼴). 마지막 값은 쪽 전체 폭 줄이면 None, 가운데 빈틈으로 가른 줄이면 같은 높이 반대쪽 칸의 글꼴("" = 없음)."""
+    반대쪽 칸 글꼴, 첫머리 글꼴 조각(_lead)). 반대쪽 칸 글꼴은 쪽 전체 폭 줄이면 None, 가운데 빈틈으로 가른 줄이면
+    같은 높이 반대쪽 칸의 글꼴("" = 없음)."""
     head = ws
     for k in range(1, len(ws)):                 # '제목 ● Timing 5–8 h': 글꼴은 소요 시간 안내 앞 제목 부분으로만 정한다
         if ws[k]["text"] == "Timing" and SYMBOL_WORD.fullmatch(ws[k - 1]["text"]):
@@ -98,7 +115,7 @@ def _line(ws: list[dict], partner: str | None = None) -> tuple:
             break
     fonts = {_font(w) for w in head if not SYMBOL_WORD.fullmatch(w["text"])} or {_font(w) for w in ws}
     return (ws[0]["bottom"], median(w["size"] for w in ws), _text(ws), max(w["size"] for w in ws),
-            fonts.pop() if len(fonts) == 1 and "?" not in fonts else "", ws[0]["x0"], partner)
+            fonts.pop() if len(fonts) == 1 and "?" not in fonts else "", ws[0]["x0"], partner, _lead(ws))
 
 
 def _page_lines(page) -> tuple[list[tuple[float, float, str, float]], bool]:
@@ -222,6 +239,45 @@ def _head_marks(pages, body: float, body_font: str) -> list[dict[int, str]]:
     return marks
 
 
+def _bold_variant(font: str, body_font: str) -> bool:
+    """본문 글꼴의 굵은 변형: 이름에 Bold가 있거나, 본문 글꼴 이름 뒤에 B가 붙은 것('LinLibertineT' → 'LinLibertineTB')."""
+    if not font or font in ("?", body_font):
+        return False
+    return bool(BOLD_FONT.search(font)) or (bool(body_font) and font.startswith(body_font) and "B" in font[len(body_font):])
+
+
+def _prose_next(rows, i: int, body: float, body_font: str) -> bool:
+    """문단 첫머리 제목 뒤가 정말 본문인지: 다음 줄이 본문 글꼴·본문 크기의 5낱말 이상 줄이고, 이 줄 나머지에 소문자 낱말이
+    있어야 한다. 그림 속 글자('person:0.918')·표 첫 칸·작은 글자 각주는 여기서 걸러진다."""
+    r = rows[i]
+    if not re.search(r"\b[a-z]{3,}\b", r[7][2]):
+        return False
+    if i + 1 >= len(rows):
+        return True                              # 쪽 끝 줄이면 다음 쪽에서 이어진다
+    n = rows[i + 1]
+    return n[4] == body_font and abs(n[1] - body) <= 0.8 and len(n[2].split()) >= 5
+
+
+def _runin_marks(pages, body: float, body_font: str, marks: list[dict[int, str]]) -> None:
+    """문단 첫머리 굵은 제목 줄에 RUNIN_MARK. 조건: 앞 조각이 본문의 굵은 변형이고 뒤가 본문 글꼴, 앞 조각은 대문자로
+    시작하는 10낱말 이하, '.'·':'로 끝나거나 뒤가 대문자로 시작, 앞 줄이 문장부호로 끝남(문단 시작), 본문 크기.
+    문장 중간에 굵게 쓴 조건 이름('… within the instructed task, / Unified was 49.9 sec faster')은 앞 줄이 쉼표로 끝나 걸리지 않는다."""
+    rep = _repeated(pages)
+    prev = ""
+    for p, rows in enumerate(pages):
+        for i, r in enumerate(rows):
+            lead = r[7] if len(r) > 7 else None
+            if (lead and i not in marks[p] and abs(r[1] - body) <= 0.8 and r[2] not in rep
+                    and _bold_variant(lead[1], body_font) and lead[3].startswith(body_font)
+                    and lead[0][:1].isupper() and len(lead[0].split()) <= RUNIN_MAX_WORDS
+                    and not RUNIN_NOT.match(lead[0])
+                    and (lead[0].rstrip().endswith((".", ":")) or lead[2][:1].isupper())
+                    and (not prev or SENT_DONE.search(prev)) and _prose_next(rows, i, body, body_font)):
+                marks[p][i] = RUNIN_MARK
+            if r[2].strip(" .:"):
+                prev = r[2]
+
+
 def _with_paragraphs(lines: list[tuple], body: float = 0.0, marks: dict[int, str] | None = None) -> list[str]:
     """줄 간격이 크거나(문단·제목 앞뒤) 단이 바뀌어 위로 돌아가면 빈 줄을 넣는다."""
     gaps = [b[0] - a[0] for a, b in zip(lines, lines[1:]) if 0 < b[0] - a[0] < 40]
@@ -235,7 +291,13 @@ def _with_paragraphs(lines: list[tuple], body: float = 0.0, marks: dict[int, str
             if gap < 0 or gap > usual * PARA_GAP_RATIO or abs(size - prev_size) > 0.8:
                 out.append("")
         small = body and size < body - SMALL_GAP
-        out.append((SMALL_MARK if small else (marks or {}).get(i, "")) + text)
+        mark = SMALL_MARK if small else (marks or {}).get(i, "")
+        if mark == RUNIN_MARK:                 # 문단 첫머리 굵은 제목: 새 문단으로, 제목과 나머지를 나눠 둔다
+            if out and out[-1] != "":
+                out.append("")
+            out.append(RUNIN_MARK + row[7][0] + RUNIN_SEP + row[7][2])
+            continue
+        out.append(mark + text)
     return out
 
 
@@ -276,6 +338,7 @@ def extract(data: bytes) -> PdfText:
         body = _body_size(pages)
         body_font = _body_font(pages)
         marks = _head_marks(pages, body, body_font)
+        _runin_marks(pages, body, body_font, marks)
         lines: list[str] = []
         for rows, page_marks in zip(pages, marks):
             lines += _with_paragraphs(rows, body, page_marks)

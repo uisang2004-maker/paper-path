@@ -323,6 +323,9 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .st-key-card_row .pp-card { height:auto; flex:1 1 auto; }
 .pp-end { border:0; border-top:2px solid #d9e3ee; margin:26px 0 8px; }
 .pp-cat { font-size:.82em; color:#8796a6; }
+.pp-subhead { margin:14px 0 2px; padding:4px 10px; font-size:13.5px; font-weight:750; color:#152c49;
+  border-left:3px solid #3979b5; background:#f3f8fd; border-radius:0 6px 6px 0; }
+.pp-subhead:first-child { margin-top:2px; }
 .pp-jump { margin-left:10px; font-size:12px; font-weight:700; color:#3979b5; text-decoration:none; white-space:nowrap; }
 #pp-03 { scroll-margin-top:72px; }
 .pp-proto-list { margin:6px 0 0; padding-left:0; list-style:none; }
@@ -1905,6 +1908,31 @@ def paper_sentences(paper) -> int:
     return cache[key]
 
 
+def sub_starts(a) -> dict[int, list[str]]:
+    """{문장 번호: 그 문장에서 시작하는 소제목들}. 지금 읽는 PDF 절의 소제목(번호 소제목·문단 첫머리 굵은 제목) 위치로 정한다."""
+    sec = section_now()
+    if sec is None or sec.text != a.text:
+        return {}
+    out: dict[int, list[str]] = {}
+    for name, at in zip(sec.subheads, sec.sub_at):
+        i = next((s.idx for s in a.sentences if s.end > at), None) if at >= 0 else None
+        if i is not None:
+            out.setdefault(i, []).append(name)
+    return out
+
+
+def sub_row(a, i: int) -> str:
+    """i번째 문장 바로 위에 넣을 소제목 줄(목차처럼). 소제목이 없으면 빈 글자."""
+    ss = st.session_state
+    key = text_key(a.text)
+    cache = ss.setdefault("sub_starts_cache", {})
+    if key not in cache:
+        cache.clear()
+        cache[key] = sub_starts(a)
+    names = cache[key].get(i)
+    return "".join(f'<div class="pp-subhead">{esc(n)}</div>' for n in names) if names else ""
+
+
 def shown(a):
     """지금 보여 줄 문장들(긴 글이면 고른 부분만)."""
     lo, hi = st.session_state.get("part_range", {}).get(text_key(a.text), (0, len(a.sentences)))
@@ -1926,7 +1954,7 @@ def side_panel(a) -> None:
     ctx = cur_float_ctx(a)
     ko_head = ("한국어 번역" if res else
                ("번역을 껐어요" if not ss.show_translation else "위의 번역하기를 누르면 여기에 붙어요"))
-    rows = [f'<div class="pp-side-row"><div class="pp-no">{s.idx + 1}</div>'
+    rows = [f'{sub_row(a, s.idx)}<div class="pp-side-row"><div class="pp-no">{s.idx + 1}</div>'
             f'<div class="pp-side-en">{en_html(a, s, uls)}</div>'
             f'<div class="pp-side-ko">{ko_html(res, s.idx, a, off) if res and s.idx < len(res.ko) else ""}</div></div>'
             f'{float_cards(s.idx, ctx)}' for s in shown(a)]
@@ -1949,7 +1977,7 @@ def interleaved_panel(a) -> None:
     for s in shown(a):
         ko = (f'<div class="pp-pair-ko"><span class="pp-lang">KO</span>{ko_html(res, s.idx, a, off)}</div>'
               if res and s.idx < len(res.ko) else "")
-        rows.append(f'<div class="pp-sent pp-pair"><div class="pp-no">{s.idx + 1}</div><div>'
+        rows.append(f'{sub_row(a, s.idx)}<div class="pp-sent pp-pair"><div class="pp-no">{s.idx + 1}</div><div>'
                     f'<div class="pp-pair-en">{en_html(a, s, uls)}</div>{ko}</div></div>{float_cards(s.idx, ctx)}')
     note = "" if res else '<span class="pp-meta"> · 위 번역 칸에서 번역하면 문장마다 한국어가 붙어요</span>'
     st.markdown(f'<div class="pp-panel"><div class="pp-reader-head"><div class="pp-reader-title">'
@@ -2008,7 +2036,7 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
         off = ss.translations.get((tkey, False))
         if res.ko is not None and rows_on:
             ctx = cur_float_ctx(a)
-            rows = [f'<div class="pp-sent pp-ko"><div class="pp-no">{i + 1:02d}</div><div>{ko_html(res, i, a, off)}</div></div>'
+            rows = [f'{sub_row(a, i)}<div class="pp-sent pp-ko"><div class="pp-no">{i + 1:02d}</div><div>{ko_html(res, i, a, off)}</div></div>'
                     + (float_cards(i, ctx, ko=True) if floats_on else "") for i in range(len(res.ko)) if in_part(a, i)]
             st.markdown(f'<div class="pp-sents" style="padding:0">{"".join(rows)}</div>', unsafe_allow_html=True)
         elif res.ko is not None:
@@ -2126,7 +2154,7 @@ def reading_page() -> None:
     ctx = cur_float_ctx(a)
     if ctx[0]:
         st.markdown(float_style(ctx[0]), unsafe_allow_html=True)   # 이 글이 언급한 표·그림 이미지(한 번만)
-    rows = "".join(f'<div class="pp-sent"><div class="pp-no">{s.idx + 1}</div>{en_html(a, s, uls)}</div>'
+    rows = "".join(f'{sub_row(a, s.idx)}<div class="pp-sent"><div class="pp-no">{s.idx + 1}</div>{en_html(a, s, uls)}</div>'
                    f'{float_cards(s.idx, ctx)}' for s in shown(a))   # 처음 언급한 문장 바로 아래에 표·그림
     en_panel = (f'<div class="pp-panel pp-narrow"><div class="pp-reader-head"><div class="pp-reader-title">'
                 f'<span class="pp-lang">EN</span>영어 원문 <span class="pp-meta">· {range_note(a)}</span></div>'

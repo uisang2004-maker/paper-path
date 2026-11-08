@@ -413,6 +413,7 @@ def test_protocol_section_shows_procedure_cards_and_parts(blank):
     assert not at.exception, at.exception
     out = "\n".join(m.value for m in at.markdown)
     assert "먼저 볼 실험 절차 요점" in out and "먼저 읽을 3줄 뼈대" not in out
+    assert 'class="pp-subhead">Preparation</div>' in out                      # 본문 문장 위에 소제목 줄
     assert "CRITICAL STEP" in out and "PAUSE POINT" in out and "번호 단계 <b>1–45</b>" in out
     parts = next(g for g in at.get("button_group") if g.key == "part_pick")
     assert [o.split(" · ")[0] for o in parts.options] == ["Preparation", "Digestion procedure"]

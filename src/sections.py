@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 
 from src import patterns as P
 from src.clean import clean
-from src.pdf_text import HEAD_MARK, MARKS, SMALL_MARK, SUB_MARK
+from src.pdf_text import HEAD_MARK, MARKS, RUNIN_MARK, RUNIN_SEP, SMALL_MARK, SUB_MARK
 
 ROMAN = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6, "VII": 7, "VIII": 8, "IX": 9, "X": 10, "XI": 11, "XII": 12}
 MAX_TITLE_WORDS = 10
@@ -92,6 +92,8 @@ def heading(line: str, last_top: int, keep: frozenset[str] = frozenset(), font: 
             return font, s
         return None
     title = m.group("title").strip()
+    if m.group("dot") and not m.group("sub"):
+        return None                              # '3 Results are shown.'처럼 큰 절 번호 + 마침표는 문장
     words = title.split()
     if (len(words) > MAX_TITLE_WORDS or sum(w.isdigit() for w in words) > 1 or title.endswith("-")
             or len(P.SEC_TITLE_FUNCTION.findall(title)) >= 4 or any(ch.isdigit() for ch in words[0])):
@@ -216,12 +218,25 @@ def _split(lines: list[str], title: str, use_font: bool) -> Paper:
         para = []
 
     for raw in lines:
+        if raw.startswith(RUNIN_MARK):           # 문단 첫머리 굵은 제목('Separated. We considered …')
+            head, _, rest = raw[1:].partition(RUNIN_SEP)
+            name = re.sub(r"\s+", " ", head).strip(" .:")
+            if cur is not None and name:
+                end_para()
+                if name not in cur.subheads:
+                    cur.subheads.append(name)
+                    cur.sub_paras.append(len(cur.paras))
+                para = [rest.strip()] if rest.strip() else []
+                continue
+            raw = head + " " + rest              # 첫 절 앞(앞머리)이면 그냥 글자로
         small = raw.startswith(SMALL_MARK)
         font = font_of.get(raw[:1], "")
         line = P.PDF_CID.sub("", raw.lstrip(MARKS)).strip()
         if not line:
             end_para()
             continue
+        if re.fullmatch(r"[.,;:·]+", line):
+            continue                             # 글꼴이 달라 따로 떨어진 문장부호 한 개('Unified' 앞의 '.')
         if font and line.lower() == title_key:
             font = ""                            # 첫 쪽의 글 제목 줄은 절이 아니다
         if font == "std":
@@ -271,7 +286,7 @@ def _split(lines: list[str], title: str, use_font: bool) -> Paper:
         cur = Section("본문")
         para = []
         for raw in lines:
-            line = P.PDF_CID.sub("", raw.lstrip(MARKS)).strip()
+            line = P.PDF_CID.sub("", raw.lstrip(MARKS).replace(RUNIN_SEP, " ")).strip()
             if line:
                 para.append((SMALL_MARK if raw.startswith(SMALL_MARK) else "") + line)
             elif para:

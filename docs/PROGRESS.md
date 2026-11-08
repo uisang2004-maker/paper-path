@@ -751,3 +751,19 @@
 1. 이의상 님 지적: 02의 약어·용어 설명·반복 용어 등 칩 배치가 잘못됨. 로컬 브라우저(1440×900)에서 BERT "1 Introduction"으로 재 보니 칩이 제목·토글 사이 가운데 칸(468~1073px)에 들어가 있었는데 칩이 많고 개수가 크면 마지막 칩("반복 용어 21")이 1089px까지 넘쳐 **"읽기 전용 단계 보기" 토글(1089px)을 덮음**(칩 줄이 줄바꿈되지 않음)
 2. 구현(`app.py`): 제목 줄은 "02 원문과 번역 읽기" + 토글만 두고, 그 아래에 칩을 **한 줄 전체 폭**으로(이름표 "형광펜 켜고 끄기 · 누르면 그 표시만 꺼지고 다시 누르면 켜져요"), 칩이 넘치면 다음 줄로 넘어가게(`flex-wrap`), 왼쪽 맞춤
 3. 실행 결과: 칩이 제목과 같은 왼쪽 끝(71px)에서 시작해 제목 아래 한 줄(686px)에 놓이고 토글(633~654px)과 겹치지 않음. 400px 폭에서는 칩이 2줄로 넘어가고 오른쪽 끝 337px로 화면 안. `py -I -m pytest` **258 passed**
+
+### 2026-11-08 (51) — 문단 첫머리 굵은 제목·마침표 붙은 번호 소제목·본문 안 소제목 줄(팀원 피드백)
+
+1. 팀원 피드백: ACM 양식 논문(ICoN, 11쪽)에서 `Separated.`·`Unified` 같은 소제목이 번역할 **문장 하나**로 들어감, 소제목이 목차처럼 보이면 좋겠음. PDF 글꼴 실측: 문단 첫머리 제목은 굵은 글꼴(`LinLibertineTB`·`Calibri-Bold`) + 같은 줄 뒤는 본문 글꼴(`LinLibertineT`). `LinLibertineTB`는 이름에 Bold가 없어 굵은 글꼴로 인식되지 않았음. 또 `6.2 Qualitative Feedback.`은 끝 마침표 때문에 소제목 정규식에 안 걸려 6.1에 섞임
+2. 구현
+   - `src/pdf_text.py`: 줄 첫머리 같은 글꼴 조각(`_lead`)을 기록. **문단 첫머리 굵은 제목**(RUNIN_MARK) 조건: 앞 조각이 본문의 굵은 변형(이름에 Bold, 또는 본문 글꼴 이름 + B: `LinLibertineT` → `LinLibertineTB`)이고 뒤가 본문 글꼴, 대문자로 시작하는 10낱말 이하, `.`·`:`로 끝나거나 뒤가 대문자로 시작, 앞 줄이 문장부호로 끝남(문단 시작), 다음 줄이 본문 글꼴·크기의 5낱말 이상(그림 속 글자·표 첫 칸·각주 제외), `Figure`·`Table` 등으로 시작하지 않음
+   - `src/sections.py`: 문단 첫머리 제목은 소제목으로 떼고(본문 문장에서 뺌) 나머지는 문단으로. 따로 떨어진 문장부호 한 개 줄은 버림
+   - `src/patterns.py` `SEC_NUM_HEAD`: 소절 번호(점이 있는 번호) 제목은 끝 마침표 하나 허용(`6.2 Qualitative Feedback.`). 큰 절 번호 + 마침표('3 Results are shown here.')는 계속 문장으로 봄
+   - `app.py`: 모든 읽기 모드에서 소제목이 시작하는 문장 바로 위에 **소제목 줄**(`.pp-subhead`)
+3. 실행 결과
+   - ICoN: 소제목 9 → **23개**(Separated · Unified · Error score · Transition in Unified and Separated · 6.2 Qualitative Feedback 등), 본문에서 한 낱말짜리 'Separated.' 문장이 사라짐
+   - 시험 PDF 12편 비교: 기존 7편에서도 진짜 문단 제목이 소제목으로 잡힘(ResNet `Plain Networks`·`Deeper Bottleneck Architectures`, RAG `RAG-Sequence`·`Retrieval Ablations`, BERT `Task #1: Masked LM` 등). 바뀐 본문 글자는 떼어 낸 제목 글자만큼(15~110자) 줄어든 것뿐. Elden·Newman·Bradley·Brodkorb은 그대로
+   - 중간 시도에서 잡은 문제 3가지: ① 문단 제목 줄을 따로 떼자 그림 속 글자(Faster R-CNN 'person:0.918')·표(Brodkorb Troubleshooting)·작은 글자 각주(Transformer)가 잡음 거르기를 빠져나와 본문이 최대 1,900자 늘어남 → '다음 줄이 본문' 조건 추가 ② 줄 출력 코드를 나누다 작은 글자 표시(SMALL_MARK)를 빠뜨려 각주·See also가 본문에 들어감 → 고침 ③ 셸 이스케이프로 정규식 `\b`가 백스페이스 문자로 바뀌어 문단 제목이 하나도 안 잡힘 → 고침
+   - 놓치는 것: `Code generation mechanism in put-in: sync`(제목 안에 굵은 글꼴과 기울인 글꼴이 섞임). 뒤 글꼴 조건을 넓히면 BERT `No NSP`가 `No`로 잘려 되돌림. ICoN 7절의 여러 줄 굵은 제목 끝 낱말 `VR`이 소제목으로 잡힘
+   - `py -I -m pytest` **261 passed**(문단 첫머리 제목·문장 중간 굵은 낱말은 제목 아님, 마침표 붙은 소절 번호, 본문 소제목 줄). 로컬 브라우저에서 ICoN '5 User Study' 2·3부분 위에 "5.1 Study Conditions"·"Separated" 소제목 줄, 다음 문장이 "We considered several …"로 시작함을 확인
+   - 따로 발견(이번에 고치지 않음): `src/extract.py` 310줄 용어 설명 밑줄 멈춤 정규식의 `\b`가 예전 커밋 `48f321a`에서 백스페이스 문자로 들어가 `which/and we/but/while` 앞에서 밑줄이 멈추지 않음

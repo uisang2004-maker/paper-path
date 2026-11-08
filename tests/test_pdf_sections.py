@@ -453,3 +453,28 @@ def test_numbered_steps_kept_but_footnotes_dropped():
              *step, "", "4 We note that the enzyme was bought from one company."]
     text = split_paper(lines, "T").sections[1].text
     assert "Perform all enzyme" in text and "We note that" not in text
+
+
+def test_run_in_bold_paragraph_heading_becomes_subhead():
+    """ACM 양식 문단 첫머리 굵은 제목('Separated. We considered …')은 소제목으로 떼고 본문 문장에서 뺀다.
+    문장 중간 줄 첫머리에 굵게 쓴 낱말(앞 줄이 쉼표로 끝남)은 제목이 아니다."""
+    say = ["We study how people move between two workspaces during data analysis.",
+           "The first condition places the notebook and the data in separate rooms."]
+    items = [(60, 740, "1 Introduction", "B", 12)]
+    items += [(60, 720 - 13 * k, t, "R", 10) for k, t in enumerate(say)]
+    items += [(60, 680, "Separated.", "B", 10), (125, 680, "We considered several organizational strategies here.", "R", 10)]
+    items += [(60, 667, "Clustering groups related items based on proximity or other shared attributes,", "R", 10)]
+    items += [(60, 654, "Unified", "B", 10), (110, 654, "was faster than the other condition in every task we gave.", "R", 10)]
+    items += [(60, 641 - 13 * k, t, "R", 10) for k, t in enumerate(say)]
+    pdf = extract(make_font_pdf([items]))
+    sec = split_paper(pdf.lines, pdf.title).sections[0]
+    assert sec.subheads == ["Separated"]
+    assert "Separated." not in sec.text and "We considered several organizational strategies" in sec.text
+    assert "Unified was faster" in sec.text                                  # 문장 중간 굵은 낱말은 그대로 본문
+
+
+@pytest.mark.parametrize("line,last,want", [
+    ("6.2 Qualitative Feedback.", 6, ("sub", "6.2 Qualitative Feedback")),
+    ("3 Results are shown here.", 2, None)])
+def test_numbered_subhead_may_end_with_period(line, last, want):
+    assert heading(line, last) == want
