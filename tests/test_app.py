@@ -572,3 +572,15 @@ def test_doc_thumb_prefers_figure_one():
     im = Image.open(_io.BytesIO(__import__("base64").b64decode(uri.split(",", 1)[1])))
     assert im.size == (360, 180)                                         # 3쪽의 Figure 1을 골라 360px로 줄임
     assert doc_thumb([]) == ""
+
+
+def test_hard_words_are_dotted_in_text_and_toggle_off(at):
+    """단어표의 어려운 단어가 본문에 점선으로 표시되고, 칩으로 끌 수 있다(팀원 피드백: 본문에 표시가 없음)."""
+    at.session_state["input_text"] = ("We separate the proteins with electrophoresis before the analysis. "
+                                      "Then we measure the samples with chromatography and compare the results.")
+    at.run()
+    out = md_text(at)
+    assert 'class="pp-m jargon"' in out and "electrophoresis:" in out and "어려운 단어" in out
+    assert any("어려운 단어" in o for o in mark_chips(at).options)
+    mark_chips(at).unselect("jargon").run()
+    assert 'class="pp-m jargon"' not in md_text(at)

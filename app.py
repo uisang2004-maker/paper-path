@@ -42,10 +42,11 @@ MAX_PASTE = 20000
 MAX_PDF_MB = 20
 CHIPS = (("abbr", "약어", "blue"), ("hedge", "추측·가능성", "amber"), ("confident", "확신", "teal"),
          ("reference", "참조", "violet"), ("definition", "용어 설명", "blue"), ("term", "반복 용어", "blue"),
-         ("number", "수치", "teal"))
+         ("number", "수치", "teal"), ("jargon", "어려운 단어", "gray"))
 CHIP_RULE = {"abbr": "ABBR", "hedge": "HEDGE", "confident": "CONFIDENT", "reference": "REFERENCE",
-             "definition": "DEFINITION", "term": "TERM", "number": "NUMBER"}     # 칩 → 켜고 끌 규칙
-CHIP_COLOR = {"blue": "blue", "amber": "orange", "teal": "green", "violet": "violet"}
+             "definition": "DEFINITION", "term": "TERM", "number": "NUMBER", "jargon": "JARGON"}     # 칩 → 켜고 끌 규칙
+CHIP_COLOR = {"blue": "blue", "amber": "orange", "teal": "green", "violet": "violet", "gray": "gray"}
+JARGON_RULE = "JARGON"                # 단어표의 어려운 단어(wordfreq 기준)를 본문에 점선으로. 정규식 규칙이 아니라 화면 표시 켜고 끄기
 SK_CLAMP_CHARS = 200                 # 뼈대 카드 문장이 이보다 길면 4줄까지만 보이고 '전체 보기'
 GLOSS_PREVIEW = 8                    # 단어표는 처음 8개만 보이고 나머지는 '전체 단어표 보기'로
 TIMES = re.compile(r"(\d+)번")      # 반복 용어 표시 설명에서 등장 횟수
@@ -69,9 +70,9 @@ KIND_META = {
 }
 BASIS_TEXT = {"signal": "신호 문구로 찾음", "position": "위치로 추정", "none": "찾지 못함"}
 MARK_LABEL = {"abbr": "약어", "abbr-missing": "약어(정의 없음)", "hedge": "추측·가능성", "confident": "확신", "reference": "참조",
-              "definition": "용어 설명·예시", "number": "수치 근거", "term": "반복 용어"}
+              "definition": "용어 설명·예시", "number": "수치 근거", "term": "반복 용어", "jargon": "어려운 단어"}
 CAT_RULE = {"abbr": "ABBR", "abbr-missing": "ABBR", "hedge": "HEDGE", "confident": "CONFIDENT", "reference": "REFERENCE",
-            "definition": "DEFINITION", "number": "NUMBER", "term": "TERM"}
+            "definition": "DEFINITION", "number": "NUMBER", "term": "TERM", "jargon": "JARGON"}
 UL_TITLE = {"problem": "핵심 내용(밑줄) · 무엇이 어려운가", "method": "핵심 내용(밑줄) · 무엇을 만들었나",
             "result": "핵심 내용(밑줄) · 무엇을 발견했나", "def": "용어 설명(점선 밑줄)"}
 
@@ -340,6 +341,9 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-doc-last { font-size:12px; color:#3979b5; font-weight:650; margin-top:3px; }
 .pp-resume { font-size:14px; color:#152c49; }
 .st-key-resume_box { background:#eef5fd; border:1px solid #cfe0f2; border-radius:10px; padding:6px 12px; }
+/* 어려운 단어: 단어표의 드문 말을 보라 점선으로(형광펜보다 약하게) */
+.pp-m.jargon { color:inherit; font-weight:inherit; background:transparent; padding:0; border-radius:0;
+  border-bottom:1.5px dotted #8b79b5; }
 .pp-jump { margin-left:10px; font-size:12px; font-weight:700; color:#3979b5; text-decoration:none; white-space:nowrap; }
 #pp-03 { scroll-margin-top:72px; }
 .pp-proto-list { margin:6px 0 0; padding-left:0; list-style:none; }
@@ -431,7 +435,7 @@ def init_state() -> None:
     ss.setdefault("paste_text", "")
     ss.setdefault("input_text", "")         # 자료를 넣기 전에는 비어 있고, 아래 결과 창들을 그리지 않는다
     ss.setdefault("source", {"kind": "none"})
-    ss.setdefault("active_rules", set(P.DEFAULT_ACTIVE_RULES))
+    ss.setdefault("active_rules", set(P.DEFAULT_ACTIVE_RULES) | {JARGON_RULE})
     ss.setdefault("translations", {})
     ss.setdefault("show_steps", False)
     ss.setdefault("show_translation", True)
@@ -939,7 +943,9 @@ def mark_chips(a) -> None:
     """02 표시 칩: 누르면 그 종류의 형광펜만 켜고 끈다(색이 한꺼번에 많으면 읽기 피곤하므로).
     끈 표시도 칩은 흐리게 남아 다시 켤 수 있다. 0개는 처음부터 숨긴다. 칩 색은 원문 형광펜 색."""
     ss = st.session_state
-    full = a.counts if a.active_rules == P.DEFAULT_ACTIVE_RULES else analyze(a.text).counts   # 끈 표시도 개수는 그대로
+    rules = a.active_rules - {JARGON_RULE}
+    full = dict(a.counts if rules == P.DEFAULT_ACTIVE_RULES else analyze(a.text).counts)   # 끈 표시도 개수는 그대로
+    full["jargon"] = len({m.tip.split(":")[0] for m in hard_marks(a)})                   # 어려운 단어 가짓수
     opts = [k for k, _, _ in CHIPS if full[k]]
     if not opts:
         st.markdown('<div class="pp-chips"><span class="pp-meta">표시할 표현이 없어요</span></div>', unsafe_allow_html=True)
@@ -1051,7 +1057,7 @@ def en_tips(a, i: int) -> dict[tuple[str, str], str]:
     s = a.sentences[i]
     tips = st.session_state.get("term_tips", {}).get(text_key(a.text), {})
     out = {}
-    for m in a.marks:
+    for m in all_marks(a):                 # 어려운 단어도 한국어 쪽에서 같은 설명이 뜨게
         if m.end > s.start and m.start < s.end:
             phrase = a.text[m.start:m.end]
             out.setdefault((m.category, phrase.lower()),
@@ -1719,8 +1725,42 @@ def ko_html(res, i: int, a, off=None) -> str:
     return f'<div class="pp-text">{body}</div>{extra}'
 
 
+def hard_marks(a) -> list:
+    """단어표의 어려운 단어('rare': 일상 영어에서 아주 드문 말)를 본문 위치마다 점선 표시로. 설명창에는 뜻(AI 풀이·원문 설명·
+    번역 대응어 중 있는 것)·난이도·이 글에 나온 횟수. 정규식 표시(약어·반복 용어 등)와 겹치는 곳은 그쪽을 남긴다."""
+    from src.extract import Mark
+
+    ss = st.session_state
+    key = text_key(a.text)
+    tips = ss.get("term_tips", {}).get(key, {})
+    cache = ss.setdefault("hard_marks_cache", {})
+    sig = (key, len(tips), tuple(sorted(tips.items()))[:3])
+    if cache.get("sig") == sig:
+        return cache["marks"]
+    rows = {G.term_key(e.term): e for e in G.build(a) if "rare" in e.kinds}
+    taken = [(m.start, m.end) for m in a.marks]
+    out = []
+    for x, y, low in G.rare_word_spans(a.text, frozenset(t.start for t in a.sentences)):
+        e = rows.get(G.term_key(low))
+        if e is None or any(x < b and y > s0 for s0, b in taken):
+            continue
+        mean = tips.get(G.term_key(e.term)) or "뜻은 '번역하기'나 단어표의 'AI로 뜻 풀이 받기'를 누르면 여기에 떠요"
+        level = f" · 난이도 {e.level}" if e.level else ""
+        out.append(Mark(x, y, "jargon", JARGON_RULE, f"{e.term}: {mean}{level} · 이 글에 {e.count}번 · 어려운 단어"))
+    cache.clear()
+    cache.update(sig=sig, marks=out)
+    return out
+
+
+def all_marks(a) -> list:
+    """화면에 그릴 표시: 정규식 표시 + (켜져 있으면) 어려운 단어 점선."""
+    if JARGON_RULE not in a.active_rules:
+        return a.marks
+    return sorted([*a.marks, *hard_marks(a)], key=lambda m: m.start)
+
+
 def en_html(a, s, uls) -> str:
-    html_ = render_marked(a.text, s.start, s.end, a.marks, uls.get(s.idx))
+    html_ = render_marked(a.text, s.start, s.end, all_marks(a), uls.get(s.idx))
     # 시약 품번 괄호 '(Sigma-Aldrich, cat. no. B3883)'는 작고 흐리게: 지우지 않고 시약 이름이 눈에 띄게만 한다
     html_ = CATALOG_HTML.sub(dim_catalog, html_)
     return f'<div class="pp-text">{html_}</div>'
