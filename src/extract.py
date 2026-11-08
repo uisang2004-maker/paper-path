@@ -307,7 +307,7 @@ def explanation_spans(text: str, sentences: list[Sentence]) -> list[tuple[int, i
         if cue.startswith(("i.e", "e.g")) and text[m.start() - 1:m.start()] == "(":
             stop = re.search(r"\)", rest)                       # (i.e., …) → 닫는 괄호까지
         elif any(cue.startswith(c) for c in EXAMPLE_CUES):
-            stop = re.search(r"[.;]|,\s(?:which|and\s+(?:we|it|they)|but|while)", rest)   # 예시 목록은 쉼표로 끊지 않음
+            stop = re.search(r"[.;]|,\s(?:which|and\s+(?:we|it|they)|but|while)\b", rest)   # 예시 목록은 쉼표로 끊지 않음
         else:
             stop = re.search(r"[,.;)]", rest)
         end = start + (stop.start() if stop else len(rest))

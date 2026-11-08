@@ -767,3 +767,9 @@
    - 놓치는 것: `Code generation mechanism in put-in: sync`(제목 안에 굵은 글꼴과 기울인 글꼴이 섞임). 뒤 글꼴 조건을 넓히면 BERT `No NSP`가 `No`로 잘려 되돌림. ICoN 7절의 여러 줄 굵은 제목 끝 낱말 `VR`이 소제목으로 잡힘
    - `py -I -m pytest` **261 passed**(문단 첫머리 제목·문장 중간 굵은 낱말은 제목 아님, 마침표 붙은 소절 번호, 본문 소제목 줄). 로컬 브라우저에서 ICoN '5 User Study' 2·3부분 위에 "5.1 Study Conditions"·"Separated" 소제목 줄, 다음 문장이 "We considered several …"로 시작함을 확인
    - 따로 발견(이번에 고치지 않음): `src/extract.py` 310줄 용어 설명 밑줄 멈춤 정규식의 `\b`가 예전 커밋 `48f321a`에서 백스페이스 문자로 들어가 `which/and we/but/while` 앞에서 밑줄이 멈추지 않음
+
+### 2026-11-08 (52) — 예시 표현 밑줄 멈춤 정규식 버그(\b → 백스페이스)
+
+1. (51)에서 따로 발견한 버그: `src/extract.py` 예시 표현(`such as`·`e.g.` 등) 밑줄이 멈출 곳을 찾는 정규식 `,\s(?:which|and\s+(?:we|it|they)|but|while)\b`의 `\b`가 커밋 `48f321a`에서 셸 이스케이프로 **백스페이스 문자**로 들어가 있었음 → 이 대안들은 한 번도 맞지 않고 `.`·`;`에서만 멈춤
+2. 고침: 백스페이스를 `\b`로. 저장소의 다른 `.py` 파일에는 같은 문자가 없음을 확인
+3. 실행 결과: 샘플 초록 300편의 용어 설명·예시 밑줄 199개 중 **2개만** 바뀌었고 둘 다 의도대로 `, which` 앞에서 멈춤("Sinhala, which have their own writing script" → "Sinhala", "… complex reasoning tasks, which" → "… complex reasoning tasks"). `py -I -m pytest` **262 passed**(회귀 테스트 추가)

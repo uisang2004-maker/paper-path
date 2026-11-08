@@ -107,3 +107,11 @@ def test_word_forms_merge_but_acronyms_stay_apart():
     assert [(e.term, e.count, e.first_sentence) for e in rows] == [("annotate", 4, 1)]
     a = analyze("Named entity recognition (NER) finds named entities (NE). NER is hard.")
     assert {e.term for e in G.build(a)} == {"NER", "NE"}           # 서로 다른 약어는 합치지 않는다
+
+
+def test_example_span_stops_before_which_clause():
+    """예시 표현('such as …')의 밑줄은 ', which …' 앞에서 멈춘다(정규식 \b가 백스페이스로 잘못 들어가 있던 회귀)."""
+    from src.extract import analyze
+    a = analyze("We evaluate low-resource languages such as Sinhala, which have their own writing script.")
+    spans = [a.text[x:y] for x, y, *_ in a.explanations]
+    assert "Sinhala" in spans and not any("which" in s for s in spans)
