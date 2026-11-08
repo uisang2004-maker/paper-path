@@ -478,3 +478,20 @@ def test_run_in_bold_paragraph_heading_becomes_subhead():
     ("3 Results are shown here.", 2, None)])
 def test_numbered_subhead_may_end_with_period(line, last, want):
     assert heading(line, last) == want
+
+
+def test_small_caps_headings_and_inline_abstract_with_ornament():
+    """IEEE VGTC 양식: 작은 대문자 제목('ABSTRACT'·'3 USER STUDY')은 글자가 작게 잡혀도 제목, 장식 기호('✦') 문단이
+    있어도 작은 글자 초록은 버리지 않는다."""
+    from src.pdf_text import SMALL_MARK as S
+    say = "We study how analysts organize notebook cells in an immersive space with two conditions."
+    lines = [S + "Abstract—Notebooks help people analyze data in many fields of science today.",
+             S + "We ran a study with twenty people and report the strategies they used.", "", "✦", "",
+             "1 Introduction", "", say, "", "2 Related Work", "", say, "",
+             S + "3 USER STUDY AND EVALUATION", "", say, "", S + "4 We note that one person left early.", "",
+             "4 Results", "", say]
+    paper = split_paper(lines, "T")
+    assert [s.title for s in paper.sections] == ["Abstract", "1 Introduction", "2 Related Work",
+                                                 "3 User Study and Evaluation", "4 Results"]
+    assert paper.sections[0].text.startswith("Notebooks help people")
+    assert "We note that" not in " ".join(s.text for s in paper.sections)     # 작은 글자 번호 각주는 여전히 제목·본문 아님

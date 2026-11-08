@@ -773,3 +773,16 @@
 1. (51)에서 따로 발견한 버그: `src/extract.py` 예시 표현(`such as`·`e.g.` 등) 밑줄이 멈출 곳을 찾는 정규식 `,\s(?:which|and\s+(?:we|it|they)|but|while)\b`의 `\b`가 커밋 `48f321a`에서 셸 이스케이프로 **백스페이스 문자**로 들어가 있었음 → 이 대안들은 한 번도 맞지 않고 `.`·`;`에서만 멈춤
 2. 고침: 백스페이스를 `\b`로. 저장소의 다른 `.py` 파일에는 같은 문자가 없음을 확인
 3. 실행 결과: 샘플 초록 300편의 용어 설명·예시 밑줄 199개 중 **2개만** 바뀌었고 둘 다 의도대로 `, which` 앞에서 멈춤("Sinhala, which have their own writing script" → "Sinhala", "… complex reasoning tasks, which" → "… complex reasoning tasks"). `py -I -m pytest` **262 passed**(회귀 테스트 추가)
+
+### 2026-11-08 (53) — 같은 연구실 논문 7편으로 시험: 작은 대문자 제목·장식 기호 문단
+
+1. 이의상 님이 알려 준 연구실 발표 논문 목록(국제 7편, arXiv 공개판)에서 PDF 7편을 승인받아 내려받음(arXiv, 3초 간격, `data/raw/icilab/`에만 두고 커밋 안 함). 국내 학회 3편은 링크가 없고 한국어라 제외. ACM·IEEE 판은 로그인·구독이 필요해 접속하지 않음
+2. 처음 결과: 4편은 잘 나뉨. **2508.14346·2308.13487은 2·3절 뒤가 한 절(약 40,000자)로 몰림**, 2309·2308·2508은 Abstract 없음
+3. 원인과 고침(`src/sections.py`)
+   - IEEE VGTC 양식은 절 제목을 작은 대문자로 써서 `3 USER STUDY AND EVALUATION`·`ABSTRACT` 줄이 작은 글자(각주·캡션)로 잡혔고, 작은 글자 줄은 제목이 될 수 없어 3절이 빠지자 번호 차례가 끊김 → 번호를 뺀 글자가 모두 대문자인 8낱말 이하 줄(`_caps_heading`)은 작은 글자여도 제목 후보로 받음(작은 글자 번호 각주 '4 We note …'는 대문자가 아니라 계속 제외)
+   - 2309(IEEE TVCG): 'Abstract—…' 초록 뒤 장식 기호 '✦' 한 줄이 문단이 되어 '초록이 통째로 작은 글자인지' 검사가 깨졌고, 작은 글자 초록 전체가 각주로 버려짐 → 글자 없는 문단은 그 검사에서 뺌
+4. 실행 결과
+   - 7편 모두 Abstract + 번호 절 8~10개로 나뉨(합계 69절). 2508: 2절 → 10절, 2308: 3절 → 9절
+   - 기존 시험 PDF 12편: 추출 텍스트 변경 없음, 소제목만 늘어남(ICLR 형식의 작은 대문자 소제목 `6.1 Learning to Align`·`4.2 Comparison to State of the Art`)
+   - `py -I -m pytest` **263 passed**(작은 대문자 제목·장식 기호 문단 테스트)
+   - 남은 오탐: 2608의 굵은 문장 첫머리 'In Summary, the contributions of this paper are twofold'가 문단 제목으로 잡힘

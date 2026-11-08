@@ -189,6 +189,13 @@ def _front_abstract(sections: list[Section], front: list[list[str]], notes: list
     notes.append("'Abstract' 표시가 없어 첫 절 바로 앞의 긴 글을 초록으로 보여 줘요.")
 
 
+def _caps_heading(line: str) -> bool:
+    """작은 대문자 제목 줄: 번호를 뺀 글자가 모두 대문자이고 8낱말 이하('3 USER STUDY AND EVALUATION', 'ABSTRACT')."""
+    words = re.sub(r"^[\dIVX.]+\s+", "", line.strip()).split()
+    letters = "".join(ch for ch in " ".join(words) if ch.isalpha())
+    return 0 < len(words) <= 8 and len(letters) >= 4 and letters.isupper()
+
+
 def _split(lines: list[str], title: str, use_font: bool) -> Paper:
     sections: list[Section] = []
     cur: Section | None = None
@@ -253,7 +260,9 @@ def _split(lines: list[str], title: str, use_font: bool) -> Paper:
             continue
         note = P.HEAD_NOTE.search(line) if font else None      # 'Digestion procedure ● Timing 5–8 h'
         head_line = line[:note.start()].strip() if note else line
-        h = None if small else heading(head_line, last_top, keep, font)  # 작은 글자 줄(번호 각주 등)은 제목이 될 수 없다
+        # 작은 글자 줄(번호 각주 등)은 제목이 될 수 없다. 다만 작은 대문자로 쓴 제목('3 USER STUDY AND EVALUATION',
+        # 'ABSTRACT': IEEE VGTC 양식)은 글자가 작게 잡히므로, 글자 부분이 모두 대문자인 짧은 줄이면 받는다
+        h = None if small and not _caps_heading(head_line) else heading(head_line, last_top, keep, font)
         if h:
             kind, name = h
             end_para()
@@ -299,7 +308,9 @@ def _split(lines: list[str], title: str, use_font: bool) -> Paper:
 
     for s in sections:
         # 초록을 통째로 작은 글자로 쓰는 형식(IEEE)만 작은 글자를 남긴다. 섞여 있으면 작은 쪽은 각주로 본다
-        all_small = all(sum(ln.startswith(SMALL_MARK) for ln in p) * 2 > len(p) for p in s.paras)
+        # 글자가 없는 문단(장식 기호 '✦' 한 줄)은 따지지 않는다: 그것 때문에 작은 글자 초록 전체가 각주로 버려졌다
+        all_small = all(sum(ln.startswith(SMALL_MARK) for ln in p) * 2 > len(p) for p in s.paras
+                        if any(ch.isalpha() for ln in p for ch in ln))
         kept: list[list[str]] = []
         kept_at: list[int] = []                  # 남긴 문단의 원래 번호(소제목 위치를 찾는 데 씀)
         for k, p in enumerate(s.paras):
