@@ -586,26 +586,24 @@ def test_hard_words_are_dotted_in_text_and_toggle_off(at):
     assert 'class="pp-m jargon"' not in md_text(at)
 
 
-def tut_text(at):
-    return "\n".join(m.value for m in at.markdown if 'class="pp-tut-title"' in m.value)
+def tour_scripts(at):
+    return [str(x.proto.srcdoc) for x in at.get("iframe") if "pp-tour" in str(x.proto.srcdoc)]
 
 
-def test_tutorial_shows_once_then_only_on_request(blank):
-    """처음 자료를 열면 사용법 5단계가 한 번 뜨고, '시작하기'(다음부터 보지 않기)를 누르면 저장돼 다시 뜨지 않는다.
-    '사용법 보기'로는 언제든 다시 연다(팀원 피드백: 밑줄·형광펜 뜻을 어디서 보는지 모름)."""
+def test_on_screen_tour_shows_once_then_only_on_request(blank):
+    """처음 자료를 열면 실제 화면 요소를 하나씩 강조하는 안내가 한 번 뜨고(건너뛰기 버튼 포함), 끝내거나 건너뛰면
+    숨은 '안내 끝' 버튼으로 '봤음'이 저장돼 다시 뜨지 않는다. '사용법 보기'로는 언제든 다시 연다."""
     blank.session_state["browser_loaded"] = True          # 브라우저 저장을 불러온 뒤에만 띄운다(설정을 먼저 알아야 함)
     blank.button(key="demo_btn").click().run()
-    assert "1 / 5" in tut_text(blank) and "먼저 읽을 3줄 뼈대" in tut_text(blank)
-    for _ in range(4):
-        blank.button(key="tut_next").click().run()
-    assert "5 / 5" in tut_text(blank) and "저장하고 이어 보기" in tut_text(blank)
-    blank.button(key="tut_done").click().run()
-    assert blank.session_state["prefs"]["tutorial_done"] is True and not tut_text(blank)
+    js = tour_scripts(blank)
+    assert len(js) == 1 and "건너뛰기" in js[0] and ".st-key-card_row" in js[0] and ".st-key-chip_row" in js[0]
+    blank.button(key="tour_done").click().run()             # 브라우저의 안내 스크립트가 끝·건너뛰기에서 누르는 버튼
+    assert blank.session_state["prefs"]["tutorial_done"] is True and not tour_scripts(blank)
     blank.run()
-    assert not tut_text(blank)
-    blank.button(key="tut_open").click().run()                # 다시 보기
-    assert "1 / 5" in tut_text(blank)
+    assert not tour_scripts(blank)
+    blank.button(key="tut_open").click().run()              # 다시 보기
+    assert len(tour_scripts(blank)) == 1
 
 
-def test_tutorial_waits_for_saved_prefs(at):
-    assert not tut_text(at)                                  # 저장된 설정을 아직 못 불러왔으면 띄우지 않는다
+def test_tour_waits_for_saved_prefs(at):
+    assert not tour_scripts(at)                              # 저장된 설정을 아직 못 불러왔으면 띄우지 않는다
