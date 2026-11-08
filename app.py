@@ -332,6 +332,14 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-subhead:first-child { margin-top:2px; }
 /* 저장된 문서 카드 */
 .pp-doc-card { border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface); }
+/* 카드 하나 = 그림·제목·진행·버튼(테두리는 카드 칸 전체에) */
+[class*="st-key-doc_card_"] { border:1px solid var(--line); border-radius:12px; background:var(--surface); overflow:hidden;
+  gap:0 !important; padding-bottom:10px; box-shadow:var(--shadow); }
+[class*="st-key-doc_card_"] .pp-doc-card { border:0; border-radius:0; box-shadow:none; }
+[class*="st-key-doc_card_"] [data-testid="stMarkdownContainer"], [class*="st-key-doc_card_"] [data-testid="stMarkdown"] {
+  margin-bottom:0 !important; }   /* Streamlit 기본 아래 여백(음수)이 버튼을 글자 위로 끌어올리지 않게 */
+[class*="st-key-doc_card_"] [data-testid="stHorizontalBlock"] { padding:4px 11px 0; gap:6px; }
+[class*="st-key-doc_card_"] button { min-height:34px !important; padding-top:4px !important; padding-bottom:4px !important; }
 .pp-doc-thumb { height:118px; background-color:#f4f7fb; background-size:contain; background-repeat:no-repeat;
   background-position:center; border-bottom:1px solid #edf1f6; }
 .pp-doc-blank { display:flex; align-items:center; justify-content:center; font-size:38px; font-weight:800; color:#9fb6cf;
@@ -614,7 +622,8 @@ def doc_card(d: dict) -> str:
         initial = next((ch for ch in title if ch.isalnum()), "P").upper()
         pic = f'<div class="pp-doc-thumb pp-doc-blank">{esc(initial)}</div>'
     last = (d.get("last") or {}).get("label")
-    where = f'<div class="pp-doc-last">지난번: {esc(last)}</div>' if last else ""
+    # 지난 위치가 없어도 한 줄을 비워 두어 같은 줄 카드의 버튼 높이를 맞춘다
+    where = f'<div class="pp-doc-last">지난번: {esc(last)}</div>' if last else '<div class="pp-doc-last">&nbsp;</div>'
     return (f'<div class="pp-doc-card">{pic}<div class="pp-doc-body"><div class="pp-doc-title" title="{esc(title)}">'
             f'{esc(title)}</div><div class="pp-meta">{kind} · {when} · 번역 {done}/{total}쪽</div>{where}</div></div>')
 
@@ -643,11 +652,12 @@ def saved_panel() -> None:
             for col, d in zip(cols, shown_docs[row:row + DOC_CARDS_PER_ROW]):
                 with col.container(key=f"doc_card_{d['id']}"):
                     st.markdown(doc_card(d), unsafe_allow_html=True)
-                    b1, b2 = st.columns([1.6, 1])
+                    b1, b2 = st.columns([2.2, 1], vertical_alignment="center")   # 버튼은 카드 안 아래쪽에
                     b1.button("이어서 보기" if d.get("last") else "열기", key=f"doc_open_{d['id']}", on_click=open_doc,
-                              args=(d["id"],), type="primary", use_container_width=True)
+                              args=(d["id"],), type="primary", use_container_width=True,
+                              icon=":material/play_arrow:" if d.get("last") else ":material/menu_book:")
                     b2.button("삭제", key=f"doc_del_{d['id']}", on_click=delete_doc, args=(d["id"],), type="tertiary",
-                              use_container_width=True)
+                              icon=":material/delete:", use_container_width=True)
         st.file_uploader("결과 파일 불러오기(.json)", type=["json"], key="saved_file", on_change=on_saved_upload)
         if ss.get("saved_msg"):
             st.success(ss.saved_msg)
