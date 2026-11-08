@@ -347,6 +347,12 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   border-bottom:1.5px dotted #8b79b5; }
 /* 화면 안내: '안내 끝'을 알리는 숨은 버튼(브라우저의 안내 스크립트가 누름) */
 .st-key-tour_done_box { position:absolute; height:0; overflow:hidden; margin:0; padding:0; }
+/* 로고·이름 전체를 누를 수 있게: 보이지 않는 버튼을 위에 덮는다 */
+.st-key-brand_home { position:relative; cursor:pointer; min-height:46px; }
+.st-key-go_home { position:absolute !important; inset:0; width:100% !important; height:100% !important; opacity:0; z-index:2; }
+.st-key-go_home > div, .st-key-go_home [data-testid="stButton"], .st-key-go_home button {
+  width:100% !important; height:100% !important; min-height:46px; cursor:pointer; }
+.st-key-brand_home:hover .pp-name { color:#3979b5; }
 .pp-jump { margin-left:10px; font-size:12px; font-weight:700; color:#3979b5; text-decoration:none; white-space:nowrap; }
 #pp-03 { scroll-margin-top:72px; }
 .pp-proto-list { margin:6px 0 0; padding-left:0; list-style:none; }
@@ -528,12 +534,14 @@ def set_show_input(on: bool) -> None:
 
 
 def loaded_bar(a) -> None:
-    """자료를 넣은 뒤 맨 위에 붙어 있는 막대: 지금 읽는 자료, 약어·어려운 단어 팝오버, 결과 파일, 다시 넣기.
+    """자료를 넣은 뒤 맨 위에 붙어 있는 막대: 지금 읽는 자료, 사용법, 약어·어려운 단어 팝오버, 결과 파일, 다시 넣기.
     스크롤해도 따라오므로 읽는 도중에 약어·어려운 단어를 바로 펼쳐 볼 수 있다."""
     with st.container(key="loaded_bar"):
-        c1, c4, c3, c2 = st.columns([3.4, 1.15, 1.3, 1], vertical_alignment="center")
+        c1, c5, c4, c3, c2 = st.columns([2.9, 0.95, 1.15, 1.3, 1], vertical_alignment="center")
         with c4.popover("약어·단어·규칙", icon=":material/menu_book:", use_container_width=True):
             reading_helper(a)
+        c5.button("사용법", key="tut_open", icon=":material/help:", on_click=open_tutorial, use_container_width=True,
+                  help="화면을 하나씩 짚어 가며 기능을 알려 줘요")   # 스크롤해도 늘 보이게 위 막대에
         c1.markdown(f'<div class="pp-loaded"><span class="pp-loaded-label">지금 읽는 자료</span>'
                     f'{esc(source_flag())}<a class="pp-jump" href="#pp-03">03 자료로 ↓</a></div>', unsafe_allow_html=True)
         ss = st.session_state
@@ -738,19 +746,20 @@ TOUR_STEPS = (
      "전체 단어표와 흐름도는 맨 아래 <b>03</b>에 있어요."),
     (".st-key-tut_open", "언제든 다시 보기",
      "읽던 곳은 자동으로 저장돼서 다음에 '저장된 문서'에서 <b>이어서 보기</b>를 고를 수 있어요. "
-     "이 안내는 여기 <b>'사용법 보기'</b>로 다시 볼 수 있어요."),
+     "이 안내는 위 막대의 <b>'사용법'</b>으로 언제든 다시 볼 수 있어요."),
 )
 
-TOUR_JS = r"""
-<script>
+TOUR_CORE = r"""
 (function () {
-  const P = window.parent, D = P.document, STEPS = __STEPS__, NONCE = "__NONCE__";
-  if (D.getElementById("pp-tour") && D.getElementById("pp-tour").dataset.nonce === NONCE) return;
-  const old = D.getElementById("pp-tour"); if (old) old.remove();
+  const W = window, D = document, STEPS = __STEPS__, NONCE = "__NONCE__";
+  const old = D.getElementById("pp-tour");
+  if (old && old.dataset.nonce === NONCE) return;
+  if (old) old.remove();
+  D.querySelectorAll(".pp-tour-on").forEach(e => e.classList.remove("pp-tour-on"));
   const css = D.getElementById("pp-tour-css") || D.head.appendChild(Object.assign(D.createElement("style"), {id: "pp-tour-css"}));
   css.textContent = `
     #pp-tour-hole { position:fixed; z-index:100000; border-radius:12px; pointer-events:none; transition:all .25s;
-      box-shadow:0 0 0 9999px rgba(15,30,50,.55); outline:3px solid #8fc1ee; }
+      box-shadow:0 0 0 9999px rgba(15,30,50,.55), 0 0 0 3px #ffd84d, 0 0 26px 8px rgba(255,216,77,.75); }
     #pp-tour-card { position:fixed; z-index:100001; width:min(380px, calc(100vw - 32px)); background:#fff; border-radius:14px;
       box-shadow:0 12px 36px rgba(0,0,0,.28); padding:16px 18px 14px; font-family:Pretendard, 'Malgun Gothic', sans-serif; }
     #pp-tour-card .n { font-size:12px; font-weight:750; color:#3979b5; }
@@ -761,8 +770,14 @@ TOUR_JS = r"""
     #pp-tour-card .skip { background:transparent; color:#60758a; padding-left:0; }
     #pp-tour-card .prev { background:#eef3f8; color:#2c4560; }
     #pp-tour-card .next { background:#152c49; color:#fff; }
+    .pp-tour-on { background:#fff3b8 !important; border-radius:4px; animation:pp-tour-pulse 1.1s ease-in-out infinite; }
+    @keyframes pp-tour-pulse { 0%,100% { box-shadow:0 0 0 2px #ffd84d, 0 0 10px 3px rgba(255,216,77,.8); }
+                               50% { box-shadow:0 0 0 4px #ffd84d, 0 0 22px 8px rgba(255,216,77,.95); } }
+    .pp-m.pp-tour-on::after { content: attr(data-tip); position:absolute; left:0; bottom:calc(100% + 8px); z-index:20;
+      background:#17293f; color:#fff; font-size:12px; font-weight:500; line-height:1.45; padding:7px 9px; border-radius:7px;
+      width:max-content; max-width:300px; white-space:normal; box-shadow:0 6px 16px rgba(0,0,0,.18); }
     .st-key-card_row, .st-key-chip_row, .st-key-read_mode_bar, .st-key-part_bar, .st-key-tut_open, .pp-sents .pp-m {
-      scroll-margin-top:90px; scroll-margin-bottom:260px; }`;
+      scroll-margin-top:110px; scroll-margin-bottom:260px; }`;
   const root = Object.assign(D.createElement("div"), {id: "pp-tour"}); root.dataset.nonce = NONCE;
   root.innerHTML = '<div id="pp-tour-hole"></div><div id="pp-tour-card"><div class="n"></div><div class="t"></div>' +
     '<div class="b"></div><div class="row"><button class="skip">건너뛰기</button><span>' +
@@ -775,40 +790,59 @@ TOUR_JS = r"""
   function place() {
     const el = target(); if (!el) return;
     const r = el.getBoundingClientRect(), pad = 6;
-    Object.assign(hole.style, {left: (r.left - pad) + "px", top: (r.top - pad) + "px",
-                               width: (r.width + pad * 2) + "px", height: (r.height + pad * 2) + "px"});
-    const ch = card.offsetHeight, cw = card.offsetWidth, vh = P.innerHeight, vw = P.innerWidth;
+    const up = el.classList.contains("pp-m") ? 64 : 0;            // 표시 단어는 위에 뜨는 설명창까지 밝게
+    Object.assign(hole.style, {left: (r.left - pad) + "px", top: (r.top - pad - up) + "px",
+                               width: (r.width + pad * 2) + "px", height: (r.height + pad * 2 + up) + "px"});
+    if (up) Object.assign(hole.style, {width: Math.min(320, W.innerWidth - r.left) + "px"});
+    const ch = card.offsetHeight, cw = card.offsetWidth, vh = W.innerHeight, vw = W.innerWidth;
     if (vw < 700) {                                                // 좁은 화면: 설명 카드는 화면 아래에 붙인다
       Object.assign(card.style, {top: "auto", bottom: "12px", left: Math.max(10, (vw - cw) / 2) + "px"});
       return;
     }
-    let top = r.bottom + 14; if (top + ch > vh - 10) top = Math.max(10, r.top - ch - 14);
+    let top = r.bottom + 14; if (top + ch > vh - 10) top = Math.max(10, r.top - up - ch - 14);
     let left = Math.min(Math.max(10, r.left), vw - cw - 10);
     Object.assign(card.style, {top: top + "px", bottom: "auto", left: left + "px"});
   }
   function show() {
-    const s = steps[i];
+    const s = steps[i], el = target();
+    D.querySelectorAll(".pp-tour-on").forEach(e => e.classList.remove("pp-tour-on"));
+    if (el.classList.contains("pp-m")) el.classList.add("pp-tour-on");   // 단어는 빛나게, 설명창도 미리 띄운다
     card.querySelector(".n").textContent = (i + 1) + " / " + steps.length;
     card.querySelector(".t").textContent = s[1];
     card.querySelector(".b").innerHTML = s[2];
     card.querySelector(".prev").style.visibility = i ? "visible" : "hidden";
     card.querySelector(".next").textContent = i + 1 < steps.length ? "다음 ▶" : "시작하기";
-    target().scrollIntoView({block: P.innerWidth < 700 ? "start" : "center"});   // 바로 옮겨야 위치 계산이 맞다
+    el.scrollIntoView({block: W.innerWidth < 700 ? "start" : "center"});   // 바로 옮겨야 위치 계산이 맞다
     place(); setTimeout(place, 150);
   }
-  function finish() {                                              // 끝내기·건너뛰기: '봤음'을 앱에 알린다(숨은 버튼)
+  function finish() {                                              // 끝내기·건너뛰기
     root.remove();
-    P.removeEventListener("resize", place, true); D.removeEventListener("scroll", place, true);
-    const b = D.querySelector(".st-key-tour_done_box button"); if (b) b.click();
+    D.querySelectorAll(".pp-tour-on").forEach(e => e.classList.remove("pp-tour-on"));
+    W.removeEventListener("resize", place, true); D.removeEventListener("scroll", place, true);
+    try {                                                          // '봤음'을 이 브라우저에 바로 저장(앱이 바빠도 남게)
+      const k = "paperpath-prefs-v1", v = JSON.parse(localStorage.getItem(k) || "{}") || {};
+      v.tutorial_done = true; localStorage.setItem(k, JSON.stringify(v));
+    } catch (e) {}
+    const b = D.querySelector(".st-key-tour_done_box button"); if (b) b.click();   // 앱(내 계정 저장)에도 알린다
   }
   card.querySelector(".skip").onclick = finish;
   card.querySelector(".prev").onclick = () => { if (i) { i--; show(); } };
   card.querySelector(".next").onclick = () => { if (i + 1 < steps.length) { i++; show(); } else finish(); };
-  P.addEventListener("resize", place, true); D.addEventListener("scroll", place, true);
+  W.addEventListener("resize", place, true); D.addEventListener("scroll", place, true);
   if (steps.length) show(); else finish();
 })();
-</script>
 """
+
+# 안내 코드는 앱 화면(부모 문서)에 직접 심는다. Streamlit이 끼워 넣는 작은 창(iframe) 안에서 돌리면, 앱이 다시 그려질 때
+# 그 창이 지워지면서 버튼 동작도 함께 사라져 '시작하기'를 눌러도 반응이 없었다(팀원 피드백).
+TOUR_JS = """<script>
+(function () {
+  const D = window.parent.document, s = D.createElement("script");
+  s.textContent = __CODE__;
+  D.body.appendChild(s);
+  s.remove();
+})();
+</script>"""
 
 
 def open_tutorial() -> None:
@@ -832,7 +866,8 @@ def maybe_tutorial() -> None:
     ss.tour_shown = True                   # 건너뛰지 않고 새로 고쳐도 이번 화면에서는 다시 띄우지 않는다
     ss.tour_nonce = ss.get("tour_nonce", 0) + 1
     steps = json.dumps([list(t) for t in TOUR_STEPS], ensure_ascii=False)
-    components.html(TOUR_JS.replace("__STEPS__", steps).replace("__NONCE__", str(ss.tour_nonce)), height=0)
+    code = TOUR_CORE.replace("__STEPS__", steps).replace("__NONCE__", str(ss.tour_nonce))
+    components.html(TOUR_JS.replace("__CODE__", json.dumps(code, ensure_ascii=False).replace("</", "<\\/")), height=0)
 
 
 def resume_reading() -> None:
@@ -1431,13 +1466,23 @@ def sec_head(num: str, title: str, note: str = "") -> str:
 
 # ================================================================ 상단 바·소개
 
+def go_home() -> None:
+    """로고를 누르면: '논문 읽기'의 첫 화면(히어로·자료 넣기·저장된 문서). 읽던 자료와 번역은 그대로 남아 '다시 열기'로 돌아온다."""
+    ss = st.session_state
+    ss.page = PAGES[0]
+    ss.show_input = True
+    ss.resume_offer = None
+
+
 def topbar() -> None:
     ok = engine_ok()
     with st.container(key="topbar"):
         c1, c2, c3 = st.columns([1.25, 2.1, 1.25], vertical_alignment="center")
-        c1.markdown(f'<div class="pp-brand"><div class="pp-mark">{ICON["doc"]}</div><div>'
-                    f'<div class="pp-name">PaperPath</div><div class="pp-sub">처음 읽는 영어 논문 도우미</div></div></div>',
-                    unsafe_allow_html=True)
+        with c1.container(key="brand_home"):   # 로고·이름을 누르면 첫 화면(읽던 자료는 그대로 남는다)
+            st.markdown(f'<div class="pp-brand"><div class="pp-mark">{ICON["doc"]}</div><div>'
+                        f'<div class="pp-name">PaperPath</div><div class="pp-sub">처음 읽는 영어 논문 도우미</div></div></div>',
+                        unsafe_allow_html=True)
+            st.button("첫 화면으로", key="go_home", on_click=go_home, help="첫 화면으로")
         with c2, st.container(key="nav"):
             st.radio("페이지", PAGES, key="page", horizontal=True, label_visibility="collapsed")
         status = ('<span class="pp-dot"></span>규칙 엔진 준비됨' if ok
@@ -2459,11 +2504,8 @@ def reading_page() -> None:
     with t3:
         st.toggle("읽기 전용 단계 보기", key="show_steps")
     with st.container(key="chip_row"):
-        l1, l2 = st.columns([5, 1], vertical_alignment="center")
-        l1.markdown('<div class="pp-nav-label">형광펜 켜고 끄기 · 누르면 그 표시만 꺼지고 다시 누르면 켜져요</div>',
+        st.markdown('<div class="pp-nav-label">형광펜 켜고 끄기 · 누르면 그 표시만 꺼지고 다시 누르면 켜져요</div>',
                     unsafe_allow_html=True)
-        l2.button("사용법 보기", key="tut_open", icon=":material/help:", type="tertiary", on_click=open_tutorial,
-                  use_container_width=True)
         mark_chips(a)
     if ss.show_steps:
         steps_panel(a)

@@ -607,3 +607,12 @@ def test_on_screen_tour_shows_once_then_only_on_request(blank):
 
 def test_tour_waits_for_saved_prefs(at):
     assert not tour_scripts(at)                              # 저장된 설정을 아직 못 불러왔으면 띄우지 않는다
+
+
+def test_logo_goes_home_and_help_in_sticky_bar(at):
+    """로고를 누르면 첫 화면(자료 넣기)으로, 읽던 자료는 남는다. '사용법'은 위에 붙은 막대에 있다."""
+    assert any(b.key == "tut_open" for b in at.button)
+    text = at.session_state["input_text"]
+    at.button(key="go_home").click().run()
+    assert not at.exception and at.session_state["show_input"] is True and at.session_state["page"] == "논문 읽기"
+    assert "AI-Powered Translation" in md_text(at) and at.session_state["input_text"] == text
