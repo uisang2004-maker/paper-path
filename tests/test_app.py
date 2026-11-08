@@ -584,3 +584,28 @@ def test_hard_words_are_dotted_in_text_and_toggle_off(at):
     assert any("어려운 단어" in o for o in mark_chips(at).options)
     mark_chips(at).unselect("jargon").run()
     assert 'class="pp-m jargon"' not in md_text(at)
+
+
+def tut_text(at):
+    return "\n".join(m.value for m in at.markdown if 'class="pp-tut-title"' in m.value)
+
+
+def test_tutorial_shows_once_then_only_on_request(blank):
+    """처음 자료를 열면 사용법 5단계가 한 번 뜨고, '시작하기'(다음부터 보지 않기)를 누르면 저장돼 다시 뜨지 않는다.
+    '사용법 보기'로는 언제든 다시 연다(팀원 피드백: 밑줄·형광펜 뜻을 어디서 보는지 모름)."""
+    blank.session_state["browser_loaded"] = True          # 브라우저 저장을 불러온 뒤에만 띄운다(설정을 먼저 알아야 함)
+    blank.button(key="demo_btn").click().run()
+    assert "1 / 5" in tut_text(blank) and "먼저 읽을 3줄 뼈대" in tut_text(blank)
+    for _ in range(4):
+        blank.button(key="tut_next").click().run()
+    assert "5 / 5" in tut_text(blank) and "저장하고 이어 보기" in tut_text(blank)
+    blank.button(key="tut_done").click().run()
+    assert blank.session_state["prefs"]["tutorial_done"] is True and not tut_text(blank)
+    blank.run()
+    assert not tut_text(blank)
+    blank.button(key="tut_open").click().run()                # 다시 보기
+    assert "1 / 5" in tut_text(blank)
+
+
+def test_tutorial_waits_for_saved_prefs(at):
+    assert not tut_text(at)                                  # 저장된 설정을 아직 못 불러왔으면 띄우지 않는다

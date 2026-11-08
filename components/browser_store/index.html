@@ -5,8 +5,10 @@
 <script>
 // PaperPath 브라우저 저장: 번역·뜻 풀이 결과(items)와 다시 열 문서(docs)를 이 브라우저의 localStorage에 둔다(서버로 보내지 않음).
 // Streamlit 컴포넌트 규약(postMessage)만 직접 쓴다.
-// args: {save: {글 해시: 항목}, save_docs: {문서 id: 문서}, delete_docs: [문서 id], clear: bool, ver: 문자열, max: 바이트, max_docs: 개수}
+// args: {save: {글 해시: 항목}, save_docs: {문서 id: 문서}, delete_docs: [문서 id], clear: bool, ver: 문자열, max: 바이트, max_docs: 개수,
+//        save_prefs: {이름: 값}}  ※ prefs(사용 안내를 봤는지 등)는 따로 두어 '번역 모두 지우기'에 지워지지 않는다
 const KEY = "paperpath-saved-v1";
+const PREFS = "paperpath-prefs-v1";
 let lastVer = null, sent = false;
 
 function post(type, extra) {
@@ -17,6 +19,9 @@ function read() {
     const s = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
     return { items: s.items || {}, docs: s.docs || {} };
   } catch (e) { return { items: {}, docs: {} }; }
+}
+function readPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS) || "{}") || {}; } catch (e) { return {}; }
 }
 function size(obj) { return new Blob([JSON.stringify(obj)]).size; }
 function oldest(map) { return Object.keys(map).sort((a, b) => (map[a].ts || 0) - (map[b].ts || 0)); }
@@ -51,11 +56,14 @@ window.addEventListener("message", function (ev) {
     if (a.save_docs) for (const k in a.save_docs) { store.docs[k] = a.save_docs[k]; changed = true; }
     if (a.delete_docs) for (const k of a.delete_docs) { delete store.docs[k]; changed = true; }
     if (changed) ok = write(store, a.max || 3500000, a.max_docs || 30);
+    if (a.save_prefs) {
+      try { localStorage.setItem(PREFS, JSON.stringify(Object.assign(readPrefs(), a.save_prefs))); } catch (e) {}
+    }
   }
   if (!sent || a.clear) {
     sent = true;
     post("streamlit:setComponentValue",
-         { value: { items: store.items, docs: store.docs, bytes: size(store), ok: ok }, dataType: "json" });
+         { value: { items: store.items, docs: store.docs, prefs: readPrefs(), bytes: size(store), ok: ok }, dataType: "json" });
   }
 });
 post("streamlit:componentReady", { apiVersion: 1 });

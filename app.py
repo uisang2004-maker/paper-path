@@ -344,6 +344,11 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 어려운 단어: 단어표의 드문 말을 보라 점선으로(형광펜보다 약하게) */
 .pp-m.jargon { color:inherit; font-weight:inherit; background:transparent; padding:0; border-radius:0;
   border-bottom:1.5px dotted #8b79b5; }
+/* 사용법 창 */
+.pp-tut-step { font-size:12px; font-weight:750; color:#3979b5; }
+.pp-tut-title { font-size:19px; font-weight:800; color:#152c49; margin:2px 0 8px; }
+.pp-tut-body { font-size:14.5px; line-height:1.8; color:#34485f; min-height:96px; }
+.pp-tut-body .pp-m { cursor:default; }
 .pp-jump { margin-left:10px; font-size:12px; font-weight:700; color:#3979b5; text-decoration:none; white-space:nowrap; }
 #pp-03 { scroll-margin-top:72px; }
 .pp-proto-list { margin:6px 0 0; padding-left:0; list-style:none; }
@@ -455,7 +460,9 @@ def init_state() -> None:
     ss.setdefault("docs_delete", [])          # 다음 실행에 브라우저에서 지울 문서 id
     ss.setdefault("account_loaded", False)    # 로그인 뒤 내 계정 저장소에서 불러왔는지
     ss.setdefault("account_sig", {})          # 내 계정에 올린 결과 항목: 해시 → 저장 표시
-    ss.setdefault("account_docs", {})         # 내 계정에 올린 문서: id → 저장 시각
+    ss.setdefault("account_docs", {})         # 내 계정에 올린 문서: id → (저장 시각, 지난 위치)
+    ss.setdefault("prefs", {})                # 사용 안내를 봤는지 등(이 브라우저·내 계정)
+    ss.setdefault("prefs_pending", {})
     ss.setdefault("account_msg", None)        # 내 계정 저장소 오류 안내
     ss.setdefault("current_doc", None)        # 지금 읽는 문서 id(번역 한도를 세는 단위, src/quota.py)
     ss.setdefault("guest_chars", 0)           # 로그인하지 않고 이 화면에서 번역한 글자 수(맛보기 한도)
@@ -712,6 +719,76 @@ def open_doc(doc_id: str) -> None:
     ss.show_input = False
 
 
+TUTORIAL_STEPS = (
+    ("먼저 읽을 3줄 뼈대",
+     "01의 카드 세 장은 이 글의 <b>문제 · 방법 · 결과</b> 문장이에요. 정규식이 신호 문구(<i>we propose</i>, <i>results show</i>…)로 "
+     "찾았고, <span class='pp-u'>진한 밑줄</span>은 그 문장의 핵심 내용이에요. 오른쪽 위 '신호 문구로 찾음'과 '위치로 추정'은 "
+     "근거가 얼마나 확실한지를 알려 줘요."),
+    ("형광펜 색의 뜻",
+     "<span class='pp-m abbr'>BERT</span> 약어 · <span class='pp-m hedge'>may</span> 추측·가능성 · "
+     "<span class='pp-m confident'>significantly</span> 확신 · <span class='pp-m reference'>Table 2</span> 참조 · "
+     "<span class='pp-m number'>8.4%</span> 수치 · <span class='pp-m term'>transformer</span> 반복 용어 · "
+     "<span class='pp-m jargon'>electrophoresis</span> 어려운 단어<br>02 위의 칩을 누르면 그 표시만 꺼지고, 다시 누르면 켜져요."),
+    ("마우스를 올려 보세요",
+     "표시된 말에 마우스를 올리면(휴대폰은 누르면) <b>뜻 · 규칙 · 이 글에 나온 횟수</b>가 떠요. 약어는 풀네임, 어려운 단어는 "
+     "뜻과 난이도예요. 'Table 2'·'Fig. 3'에 올리면 표·그림 미리보기가 뜨고, 한국어 번역 쪽에도 같은 설명이 떠요."),
+    ("읽는 도구",
+     "위에 붙어 있는 <b>'약어·단어·규칙'</b>은 스크롤 위치와 상관없이 이 글의 약어·어려운 단어·걸린 규칙을 보여 줘요. "
+     "긴 절은 <b>소제목 단위</b>로 나뉘고 글 아래 ◀ ▶로 넘겨요. 읽기 모드는 한영 나란히 · 문장마다 한영 · 영어만 · 한국어만이에요."),
+    ("저장하고 이어 보기",
+     "번역과 뜻 풀이는 <b>이 브라우저</b>(로그인하면 <b>내 계정</b>)에 저장돼요. 다음에는 PDF를 다시 넣지 않아도 '저장된 문서'에서 "
+     "열 수 있고, 읽던 곳에서 <b>이어서 보기</b>를 고를 수 있어요. 번역·뜻 풀이는 AI(Claude)가 쓴 참고용이에요."),
+)
+
+
+def open_tutorial() -> None:
+    ss = st.session_state
+    ss.tut_step = 0
+    ss.tut_active = True
+
+
+def tut_go(k: int) -> None:
+    st.session_state.tut_step = k
+
+
+def close_tutorial() -> None:
+    """창을 X로 닫아도 '봤음'으로 저장한다(매번 뜨면 성가시다). 다시 보려면 '사용법 보기'."""
+    st.session_state.tut_active = False
+    set_pref("tutorial_done", True)
+
+
+def maybe_tutorial() -> None:
+    """처음 자료를 열었을 때 한 번 사용법을 띄운다(이 브라우저·내 계정에 '봤음'을 저장한 뒤로는 '사용법 보기'로만)."""
+    ss = st.session_state
+    first = not ss.prefs.get("tutorial_done") and ss.get("browser_loaded") and not ss.get("tut_shown")
+    if first:
+        ss.tut_shown = True                # 창을 X로 닫아도 이번 화면에서는 다시 띄우지 않는다
+        open_tutorial()
+    if ss.get("tut_active"):               # 단계를 넘기는 동안 화면 전체가 다시 그려져도 창이 닫히지 않게
+        tutorial_dialog()
+
+
+@st.dialog("PaperPath 사용법", width="medium", on_dismiss=close_tutorial)
+def tutorial_dialog() -> None:
+    ss = st.session_state
+    k = min(ss.get("tut_step", 0), len(TUTORIAL_STEPS) - 1)
+    title, body = TUTORIAL_STEPS[k]
+    st.markdown(f'<div class="pp-tut-step">{k + 1} / {len(TUTORIAL_STEPS)}</div><div class="pp-tut-title">{esc(title)}</div>'
+                f'<div class="pp-tut-body">{body}</div>', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1, 1.4, 1], vertical_alignment="center")
+    if k > 0:                              # 단계 이동은 콜백으로(창 안에서만 다시 그려진다)
+        c1.button("◀ 이전", key="tut_prev", use_container_width=True, on_click=tut_go, args=(k - 1,))
+    if k + 1 < len(TUTORIAL_STEPS):
+        c3.button("다음 ▶", key="tut_next", type="primary", use_container_width=True, on_click=tut_go, args=(k + 1,))
+    else:
+        never = c2.checkbox("다음부터 보지 않기", value=True, key="tut_never")
+        if c3.button("시작하기", key="tut_done", type="primary", use_container_width=True):
+            if never:
+                set_pref("tutorial_done", True)
+            ss.tut_active = False
+            st.rerun()
+
+
 def resume_reading() -> None:
     """'이어서 보기': 지난번에 보던 쪽·절·부분·읽기 모드로 옮긴다."""
     ss = st.session_state
@@ -825,19 +902,21 @@ def browser_sync() -> None:
     pending = {k: v for k, v in items.items() if ss.saved_sig.get(k) != SV.signature(v)}
     if clear:
         ss.browser_docs, ss.docs_pending = {}, {}
-    docs, deletes = ss.docs_pending, ss.docs_delete
-    if pending or clear or docs or deletes:
+    docs, deletes, prefs = ss.docs_pending, ss.docs_delete, ss.prefs_pending
+    if pending or clear or docs or deletes or prefs:
         ss.browser_ver += 1
     with st.container(key="browser_store_box"):
         value = _browser_store(save=pending or None, save_docs=docs or None, delete_docs=deletes or None, clear=clear,
-                               ver=str(ss.browser_ver), max=SV.MAX_BYTES, max_docs=SV.MAX_DOCS,
-                               key="browser_store", default=None)
-    ss.docs_pending, ss.docs_delete = {}, []
+                               save_prefs=prefs or None, ver=str(ss.browser_ver), max=SV.MAX_BYTES,
+                               max_docs=SV.MAX_DOCS, key="browser_store", default=None)
+    ss.docs_pending, ss.docs_delete, ss.prefs_pending = {}, [], {}
     for k, v in pending.items():
         ss.saved_sig[k] = SV.signature(v)
         ss.browser_keys.add(k)
     if value and not ss.browser_loaded:
         ss.browser_loaded = True
+        for k, v in (value.get("prefs") or {}).items():
+            ss.prefs.setdefault(k, v)
         stored = value.get("items") or {}
         ss.browser_keys |= set(stored)
         for k, rec in (value.get("docs") or {}).items():
@@ -1490,6 +1569,22 @@ def current_user() -> str | None:
     return S.user_key(sub, secret("USER_ID_SALT")) if sub else None
 
 
+PREFS_DAY = "prefs"                   # 내 계정 설정은 사용 기록 표(paperpath_usage)의 이 'day' 줄에 둔다(표를 새로 만들지 않음)
+
+
+def doc_mark(d: dict) -> tuple:
+    """내 계정에 다시 올릴지 볼 표시: 저장 시각과 지난 위치(이어 보기 위치가 바뀌어도 올린다)."""
+    return (d.get("ts", 0), repr(d.get("last")))
+
+
+def set_pref(name: str, value) -> None:
+    """설정 하나를 이 브라우저와(로그인했으면) 내 계정에 저장한다."""
+    ss = st.session_state
+    ss.prefs[name] = value
+    ss.prefs_pending[name] = value
+    ss.prefs_account = True
+
+
 def account_sync() -> None:
     """C: 로그인했으면 내 계정 저장소와 번역·뜻 풀이 결과·다시 열 문서를 맞춘다.
     처음 한 번 계정의 기록을 불러오고(다른 PC에서 한 번역도 API 없이 보임), 그 뒤엔 새로 생긴 것만 올린다."""
@@ -1509,20 +1604,24 @@ def account_sync() -> None:
                 ss.ai_gloss.setdefault(k, g)
             for k, item in items.items():
                 ss.account_sig[k] = SV.signature(item)
+            for k, v in (store.get_usage(user, PREFS_DAY) or {}).items():
+                ss.prefs.setdefault(k, v)
             for k, rec in docs.items():
                 if SV.valid_doc(rec):
-                    ss.account_docs[k] = rec.get("ts", 0)
+                    ss.account_docs[k] = doc_mark(rec)
                     if k not in ss.browser_docs:
                         remember_doc(rec)              # 이 브라우저의 '저장된 문서'에도 넣는다
         items = SV.pack_items(ss.translations, ss.ai_gloss)
         pending = {k: v for k, v in items.items() if ss.account_sig.get(k) != SV.signature(v)}
-        docs = {k: d for k, d in ss.browser_docs.items() if ss.account_docs.get(k) != d.get("ts", 0)}
+        docs = {k: d for k, d in ss.browser_docs.items() if ss.account_docs.get(k) != doc_mark(d)}
         if pending:
             store.put_items(user, pending)
             ss.account_sig.update({k: SV.signature(v) for k, v in pending.items()})
         if docs:
             store.put_docs(user, docs)
-            ss.account_docs.update({k: d.get("ts", 0) for k, d in docs.items()})
+            ss.account_docs.update({k: doc_mark(d) for k, d in docs.items()})
+        if ss.pop("prefs_account", False):
+            store.put_usage(user, PREFS_DAY, ss.prefs)
         ss.account_msg = None
     except S.StoreError as e:
         ss.account_msg = str(e)
@@ -1540,7 +1639,7 @@ def account_delete_all() -> None:
         return
     # 지금 화면에 남은 결과를 다음 동기화 때 다시 올리지 않도록 '올린 것'으로 표시해 둔다
     ss.account_sig = {k: SV.signature(v) for k, v in SV.pack_items(ss.translations, ss.ai_gloss).items()}
-    ss.account_docs = {k: d.get("ts", 0) for k, d in ss.browser_docs.items()}
+    ss.account_docs = {k: doc_mark(d) for k, d in ss.browser_docs.items()}
     ss.saved_msg = "내 계정에 저장된 기록을 모두 지웠어요(이 브라우저에 저장된 것은 그대로예요)."
 
 
@@ -1746,7 +1845,7 @@ def hard_marks(a) -> list:
             continue
         mean = tips.get(G.term_key(e.term)) or "뜻은 '번역하기'나 단어표의 'AI로 뜻 풀이 받기'를 누르면 여기에 떠요"
         level = f" · 난이도 {e.level}" if e.level else ""
-        out.append(Mark(x, y, "jargon", JARGON_RULE, f"{e.term}: {mean}{level} · 이 글에 {e.count}번 · 어려운 단어"))
+        out.append(Mark(x, y, "jargon", JARGON_RULE, f"{e.term}: {mean}{level} · 이 글에 {e.count}번"))   # 앞에 '어려운 단어 · '는 mark_tip이 붙인다
     cache.clear()
     cache.update(sig=sig, marks=out)
     return out
@@ -2282,6 +2381,7 @@ def reading_page() -> None:
     a = analyze(ss.input_text, frozenset(rules))
     loaded_bar(a)
     resume_prompt()
+    maybe_tutorial()
     if ss.paper is not None and ss.source["kind"] == "pdf":
         paper_overview(ss.paper)
     ss.term_tips = {text_key(a.text): term_meanings(a, ss.translations.get((text_key(a.text), True)))}
@@ -2314,8 +2414,11 @@ def reading_page() -> None:
     with t3:
         st.toggle("읽기 전용 단계 보기", key="show_steps")
     with st.container(key="chip_row"):
-        st.markdown('<div class="pp-nav-label">형광펜 켜고 끄기 · 누르면 그 표시만 꺼지고 다시 누르면 켜져요</div>',
+        l1, l2 = st.columns([5, 1], vertical_alignment="center")
+        l1.markdown('<div class="pp-nav-label">형광펜 켜고 끄기 · 누르면 그 표시만 꺼지고 다시 누르면 켜져요</div>',
                     unsafe_allow_html=True)
+        l2.button("사용법 보기", key="tut_open", icon=":material/help:", type="tertiary", on_click=open_tutorial,
+                  use_container_width=True)
         mark_chips(a)
     if ss.show_steps:
         steps_panel(a)
