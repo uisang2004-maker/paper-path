@@ -426,6 +426,33 @@ def test_protocol_section_shows_procedure_cards_and_parts(blank):
     assert 'class="pp-no">25<' not in "\n".join(m.value for m in at.markdown)
 
 
+def test_next_section_button_at_section_end(blank):
+    """절 끝(나누지 않은 절, 긴 절의 마지막 부분)에는 '다음 절 ▶', 첫 부분에는 '◀ 이전 절': 초록 → 본문 절 → 결론 순서."""
+    at = open_paper_doc(blank, protocol_sections())
+    assert at.session_state["source"]["page"] == "초록"
+    assert not any(b.key in ("stop_prev", "part_prev") for b in at.button)        # 맨 처음에는 '이전'이 없다
+    assert at.button(key="stop_next").label == "다음 절: Introduction ▶"
+    at.button(key="stop_next").click().run()
+    assert not at.exception, at.exception
+    src = at.session_state["source"]
+    assert src["page"] == "본문" and src["section"] == "본문 › Introduction"
+    assert at.button(key="stop_prev").label == "◀ 이전 쪽: 초록"
+    at.button(key="stop_next").click().run()                                       # 긴 절 Procedure의 첫 부분
+    assert at.session_state["source"]["section"] == "본문 › Procedure"
+    assert at.button(key="stop_prev").label == "◀ 이전 절: Introduction"
+    assert not any(b.key == "stop_next" for b in at.button)                       # 부분이 남아 있으면 '다음 부분'만
+    at.button(key="part_next").click().run()
+    assert at.button(key="stop_next").label == "다음 쪽: 결론 ▶"                    # 마지막 부분에서 다음 절(쪽)로
+    at.button(key="stop_next").click().run()
+    assert at.session_state["source"]["page"] == "결론"
+    assert not any(b.key == "stop_next" for b in at.button)                       # 논문 끝
+    rec = next(iter(at.session_state["browser_docs"].values()))
+    assert rec["last"]["page"] == "결론"                                           # 넘긴 위치도 저장
+    at.button(key="stop_prev").click().run()                                       # 결론 → 본문 마지막 절
+    assert at.session_state["source"]["section"] == "본문 › Procedure"
+    assert next(g for g in at.get("button_group") if g.key == "section_pick").value == 1   # 위 절 고르기도 맞춰짐
+
+
 def test_body_section_has_no_position_fallback(blank):
     secs = protocol_sections()
     secs[2] = {"title": "3 Model", "text": "The encoder has six layers. Each layer has two sublayers."}

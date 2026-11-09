@@ -312,7 +312,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .st-key-part_next_box { align-items:flex-end !important; }   /* 세로로 쌓는 칸이라 오른쪽 끝은 align-items로 */
 .st-key-part_nav_narrow { max-width:960px; margin-left:auto !important; margin-right:auto !important; }
 .st-key-part_nav button, .st-key-part_nav_narrow button { min-height:36px !important; }
-.st-key-part_bar { scroll-margin-top:72px; }   /* 위에 붙은 막대에 가리지 않게 */
+.st-key-part_bar, .st-key-paper_nav { scroll-margin-top:72px; }   /* 위에 붙은 막대에 가리지 않게 */
 .pp-nav-label { font-size:12px; font-weight:750; color:#2c4560; margin:6px 0 3px; }
 .pp-sk-more summary { list-style:none; cursor:pointer; }
 .pp-sk-more summary::-webkit-details-marker { display:none; }
@@ -2251,21 +2251,77 @@ def go_part(k: int) -> None:
     track_position()
 
 
+def reading_stops() -> list[tuple[str, int, str]]:
+    """PDF 논문을 처음부터 읽는 순서 [(쪽, 본문 절 번호, 이름)]: 초록 → 본문 절 하나씩 → 결론. PDF가 아니면 []."""
+    ss = st.session_state
+    if ss.get("paper") is None or ss.source.get("kind") != "pdf":
+        return []
+    stops = []
+    for page, ids in paper_pages(ss.paper).items():
+        if page == "본문":
+            stops += [(page, j, ss.paper.sections[i].title) for j, i in enumerate(ids)]
+        else:
+            stops.append((page, 0, page))
+    return stops
+
+
+def stop_now(stops) -> int | None:
+    """지금 읽는 곳이 reading_stops의 몇 번째인지."""
+    ss = st.session_state
+    page = ss.source.get("page")
+    body = ss.get("body_cur", 0) if page == "본문" else 0
+    return next((k for k, s in enumerate(stops) if s[:2] == (page, body)), None)
+
+
+def go_stop(page: str, body: int) -> None:
+    """글 아래 '다음 절 ▶ / ◀ 이전 절': 그 쪽·절의 첫 부분으로 옮기고, 화면은 절 고르기 막대로 올린다."""
+    ss = st.session_state
+    ss.paper_cur, ss.body_cur = page, body
+    for k in ("paper_page", "section_pick"):   # 위 쪽·절 고르기 버튼도 새 위치로 다시 채운다
+        ss.pop(k, None)
+    set_view()
+    track_position(new_section=True)
+    ss.stop_scroll = True
+
+
+def stop_label(stop) -> str:
+    return f"절: {stop[2]}" if stop[0] == "본문" else f"쪽: {stop[2]}"
+
+
 def part_nav_buttons(parts, narrow: bool = False) -> None:
-    """글 바로 아래 막대: '◀ 이전 부분 · 지금 몇 번째 · 다음 부분 ▶'(첫 부분엔 이전, 마지막 부분엔 다음이 없다).
+    """글 바로 아래 막대: '◀ 이전 · 지금 위치 · 다음 ▶'. 긴 절 안에서는 부분끼리 넘기고, 절의 마지막 부분(나누지 않은
+    절은 그 끝)에서는 '다음 절 ▶', 첫 부분에서는 '◀ 이전 절'로 논문 순서(초록 → 본문 절 → 결론)대로 넘어간다.
     본문 칸과 같은 폭(영어만·한국어만이면 가운데 960px)으로 붙여, 버튼이 본문 밖에 떠 보이지 않게 한다."""
-    k = st.session_state.get("part_pick") or 0
+    ss = st.session_state
+    stops = reading_stops()
+    at = stop_now(stops)
+    if not parts and at is None:
+        return
+    k = (ss.get("part_pick") or 0) if parts else 0
     box = st.container(key="part_nav_narrow" if narrow else "part_nav")
     prev_col, mid_col, next_col = box.columns([1, 0.8, 1], vertical_alignment="center")
-    if k > 0:
+    if parts and k > 0:
         prev_col.button(f"◀ 이전 부분: {parts[k - 1][0]}", key="part_prev", on_click=go_part, args=(k - 1,))
+    elif at is not None and at > 0:
+        prev = stops[at - 1]
+        prev_col.button(f"◀ 이전 {stop_label(prev)}", key="stop_prev", on_click=go_stop, args=prev[:2])
     sec = section_now()
-    where = f"{sec.title} 안 " if sec is not None else ""
-    mid_col.markdown(f'<div class="pp-meta" style="text-align:center">{esc(where)}{k + 1} / {len(parts)} 부분</div>',
-                     unsafe_allow_html=True)
-    if k + 1 < len(parts):
-        with next_col.container(key="part_next_box"):
+    if parts:
+        where = f"{sec.title} 안 " if sec is not None else ""
+        mid = f"{where}{k + 1} / {len(parts)} 부분"
+    else:
+        mid = f"논문 순서 {at + 1} / {len(stops)}"   # 절 이름은 위 막대·버튼에 있어 짧게(두 줄로 꺾이지 않게)
+    mid_col.markdown(f'<div class="pp-meta" style="text-align:center">{esc(mid)}</div>', unsafe_allow_html=True)
+    with next_col.container(key="part_next_box"):
+        if parts and k + 1 < len(parts):
             st.button(f"다음 부분: {parts[k + 1][0]} ▶", key="part_next", on_click=go_part, args=(k + 1,))
+        elif at is not None and at + 1 < len(stops):
+            nxt = stops[at + 1]
+            st.button(f"다음 {stop_label(nxt)} ▶", key="stop_next", type="primary", on_click=go_stop, args=nxt[:2])
+    if ss.pop("stop_scroll", False):      # 새 절로 넘어가면 절 고르기 막대(어느 절인지 보이게)부터
+        ss.stop_scroll_n = ss.get("stop_scroll_n", 0) + 1
+        components.html(f"<script>/* {ss.stop_scroll_n} */ const b = window.parent.document.querySelector('.st-key-paper_nav');"
+                        "if (b) b.scrollIntoView({block: 'start'});</script>", height=0)
 
 
 def range_note(a) -> str:
@@ -2558,9 +2614,9 @@ def reading_page() -> None:
     else:
         with st.container(key="ko_only"):
             translation_panel(a, floats_on=True)
-    if parts:                              # 이전·다음은 본문 바로 끝에, 본문과 같은 폭(표·그림 안내는 그 아래)
-        narrow = mode in ("en", "ko") or (mode == "side" and current_translation(a) is None)   # 본문이 가운데 좁은 칸일 때
-        part_nav_buttons(parts, narrow=narrow)
+    # 이전·다음(부분, 절 끝이면 절)은 본문 바로 끝에, 본문과 같은 폭(표·그림 안내는 그 아래)
+    narrow = mode in ("en", "ko") or (mode == "side" and current_translation(a) is None)   # 본문이 가운데 좁은 칸일 때
+    part_nav_buttons(parts, narrow=narrow)
     if ctx[0]:
         st.caption(f"이 글에 나온 표·그림 {len(ctx[0])}개({', '.join(t.label for t in ctx[0].values())})는 처음 언급한 "
                    "문장 바로 아래에 접어 두었어요. 누르면 펼쳐지고, 'Table 2'·'Fig. 3' 표시에 마우스를 올리면 미리보기가 떠요.")
