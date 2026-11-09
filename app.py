@@ -306,6 +306,12 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 한 언어만 볼 때(영어 원문만·한국어만): 한 줄이 너무 길지 않게 가운데 좁은 폭 */
 .pp-narrow, .st-key-ko_only { max-width:960px; margin-left:auto !important; margin-right:auto !important; }
 .st-key-part_next_box [data-testid="stButton"] { display:flex; justify-content:flex-end; }
+/* 이전·다음 막대: 본문 칸 바로 아래 같은 폭으로 붙인다 */
+.st-key-part_nav, .st-key-part_nav_narrow { border:1px solid var(--line); border-radius:12px; background:#f7fafd;
+  padding:6px 12px; margin-top:8px; }   /* 본문 글 상자의 음수 아래 여백(-16px)을 메워 겹치지 않게 */
+.st-key-part_next_box { align-items:flex-end !important; }   /* 세로로 쌓는 칸이라 오른쪽 끝은 align-items로 */
+.st-key-part_nav_narrow { max-width:960px; margin-left:auto !important; margin-right:auto !important; }
+.st-key-part_nav button, .st-key-part_nav_narrow button { min-height:36px !important; }
 .st-key-part_bar { scroll-margin-top:72px; }   /* 위에 붙은 막대에 가리지 않게 */
 .pp-nav-label { font-size:12px; font-weight:750; color:#2c4560; margin:6px 0 3px; }
 .pp-sk-more summary { list-style:none; cursor:pointer; }
@@ -2245,10 +2251,12 @@ def go_part(k: int) -> None:
     track_position()
 
 
-def part_nav_buttons(parts) -> None:
-    """글 아래 '◀ 이전 부분 · 지금 몇 번째 · 다음 부분 ▶' 버튼(첫 부분엔 이전, 마지막 부분엔 다음이 없다)."""
+def part_nav_buttons(parts, narrow: bool = False) -> None:
+    """글 바로 아래 막대: '◀ 이전 부분 · 지금 몇 번째 · 다음 부분 ▶'(첫 부분엔 이전, 마지막 부분엔 다음이 없다).
+    본문 칸과 같은 폭(영어만·한국어만이면 가운데 960px)으로 붙여, 버튼이 본문 밖에 떠 보이지 않게 한다."""
     k = st.session_state.get("part_pick") or 0
-    prev_col, mid_col, next_col = st.columns([1, 0.6, 1], vertical_alignment="center")
+    box = st.container(key="part_nav_narrow" if narrow else "part_nav")
+    prev_col, mid_col, next_col = box.columns([1, 0.8, 1], vertical_alignment="center")
     if k > 0:
         prev_col.button(f"◀ 이전 부분: {parts[k - 1][0]}", key="part_prev", on_click=go_part, args=(k - 1,))
     sec = section_now()
@@ -2550,11 +2558,12 @@ def reading_page() -> None:
     else:
         with st.container(key="ko_only"):
             translation_panel(a, floats_on=True)
+    if parts:                              # 이전·다음은 본문 바로 끝에, 본문과 같은 폭(표·그림 안내는 그 아래)
+        narrow = mode in ("en", "ko") or (mode == "side" and current_translation(a) is None)   # 본문이 가운데 좁은 칸일 때
+        part_nav_buttons(parts, narrow=narrow)
     if ctx[0]:
         st.caption(f"이 글에 나온 표·그림 {len(ctx[0])}개({', '.join(t.label for t in ctx[0].values())})는 처음 언급한 "
                    "문장 바로 아래에 접어 두었어요. 누르면 펼쳐지고, 'Table 2'·'Fig. 3' 표시에 마우스를 올리면 미리보기가 떠요.")
-    if parts:
-        part_nav_buttons(parts)            # 이전·다음은 본문 바로 끝에
     st.markdown('<hr class="pp-end">', unsafe_allow_html=True)   # 본문 끝과 03 보조 자료를 나누는 선
     track_position(user=False)             # 처음 연 위치 등 콜백 없이 바뀐 위치(다음 실행의 브라우저 저장에 실림)
 
