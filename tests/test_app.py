@@ -42,12 +42,20 @@ def test_first_screen_shows_demo_skeleton_and_flag(at):
     text = md_text(at)
     assert "실제 논문 아님" in text
     assert "we introduce" in text and "신호 문구로 찾음" in text
-    chips = mark_chips(at).options
+    chips = chip_texts(at)
     assert any("약어 1" in o for o in chips) and any("참조 1" in o for o in chips)
+    raw = mark_chips(at).options
+    assert any(o.startswith(":blue-background[약어]") for o in raw)          # 칩 이름에 본문과 같은 표시(마커)
+    assert any(o.startswith(":orange-background[추측·가능성]") for o in raw)
 
 
 def mark_chips(at):
     return next(g for g in at.get("button_group") if g.key == "mark_pills")
+
+
+def chip_texts(at):
+    """칩 라벨에서 색 표시 문법(:blue-background[…], :violet[…])을 벗긴 화면 글자."""
+    return [re.sub(r":[a-z]+(?:-background)?\[([^\]]*)\]", r"\1", o) for o in mark_chips(at).options]
 
 
 def test_chip_turns_highlight_off_and_on(at):
@@ -56,7 +64,7 @@ def test_chip_turns_highlight_off_and_on(at):
     mark_chips(at).unselect("hedge").run()
     assert not at.exception
     assert "HEDGE" not in at.session_state["active_rules"] and 'class="pp-m hedge"' not in md_text(at)
-    assert any("추측·가능성 2" in o for o in mark_chips(at).options)    # 끈 칩도 개수와 함께 남는다
+    assert any("추측·가능성 2" in o for o in chip_texts(at))    # 끈 칩도 개수와 함께 남는다
     mark_chips(at).select("hedge").run()
     assert "HEDGE" in at.session_state["active_rules"] and 'class="pp-m hedge"' in md_text(at)
 

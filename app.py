@@ -474,7 +474,6 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-loaded-src { min-width:0; }
 .pp-jump { flex:none; padding:6px 4px; }
 /* 형광펜 칩의 주황 점: 칩 바탕과 3:1 이상 */
-.st-key-mark_pills .stMarkdownColoredText[style*="226, 102, 12"] { color:#a16207 !important; }   /* 노란 형광펜과 같은 계열 */
 /* 끌어다 놓기 칸: 안쪽 흰 상자를 없애 점선 칸 하나로, 놓는 자리는 점선 칸 전체, 버튼은 가운데 */
 .st-key-pdf_drop { position:relative; padding-bottom:62px; }
 .st-key-pdf_drop [data-testid="stElementContainer"]:has([data-testid="stFileUploader"]) { position:static; }   /* 놓는 자리가 점선 칸 기준이 되게 */
@@ -566,6 +565,43 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   .pp-sent { grid-template-columns:26px 1fr; gap:10px; }
   .pp-sent:not(.pp-ko) > .pp-text, .pp-side-en .pp-text, .pp-pair-en .pp-text { font-size:16px; }
 }
+
+/* ================= 읽기 도구 한 줄 · 칩=범례 · 찾지 못한 카드 · 진행선 ================= */
+/* 형광펜 칩과 읽기 모드를 한 줄에(좁으면 칩 아래로 줄바꿈, 640px 아래는 Streamlit이 위아래로 쌓음) */
+.st-key-read_tools { margin:2px 0 6px; }
+.st-key-read_tools [data-testid="stHorizontalBlock"] { flex-wrap:wrap; gap:8px 16px; }
+.st-key-read_tools .st-key-read_mode_bar { margin:0; align-items:flex-end; }   /* 세로 flex 칸이라 오른쪽 끝은 align-items로 */
+@media (max-width: 900px) {   /* 좁으면 칩 줄과 읽기 모드 줄을 위아래로(읽기 모드 버튼이 두 줄로 꺾이지 않게) */
+  .st-key-read_tools [data-testid="stColumn"] { flex:1 1 100% !important; width:100% !important; }
+  .st-key-read_tools .st-key-read_mode_bar { align-items:flex-start; }
+}
+/* 칩 = 범례: 이름에 본문과 같은 표시(마커 획 / 실선 밑줄 / 점선 밑줄), 끄면 표시가 사라지고 글자가 흐려진다 */
+.st-key-mark_pills button { background:var(--paper) !important; border:1px solid var(--rule) !important; }
+.st-key-mark_pills button p { color:var(--text); }
+.st-key-mark_pills button[aria-pressed="true"] { border-color:var(--pencil) !important; }
+.st-key-mark_pills .stMarkdownColoredBackground { --mk:255,201,31; color:var(--ink) !important; background-color:transparent !important;
+  padding:0 .2em; border-radius:.35em .15em .4em .2em; background-repeat:no-repeat; background-size:100% 74%; background-position:0 80%;
+  background-image:linear-gradient(100deg, rgba(var(--mk),0) .5%, rgba(var(--mk),.7) 2.5%, rgba(var(--mk),.5) 9%,
+                                   rgba(var(--mk),.45) 90%, rgba(var(--mk),.7) 96.5%, rgba(var(--mk),0) 99.5%); }
+.st-key-mark_pills .stMarkdownColoredBackground[style*="255, 164, 33"] { --mk:255,201,31; }   /* 추측: 노랑 */
+.st-key-mark_pills .stMarkdownColoredBackground[style*="28, 131, 255"] { --mk:110,176,240; }  /* 약어·용어 설명: 파랑 */
+.st-key-mark_pills .stMarkdownColoredBackground[style*="33, 195, 84"] { --mk:80,200,140; }    /* 확신·수치: 초록 */
+.st-key-mark_pills .stMarkdownColoredBackground[style*="154, 93, 255"] { --mk:180,145,240; }  /* 참조: 보라 */
+.st-key-mark_pills .stMarkdownColoredText { color:var(--ink) !important; border-bottom:2px solid var(--c-blue); padding-bottom:1px; }
+.st-key-mark_pills .stMarkdownColoredText[style*="88, 63, 132"] { border-bottom:2px dotted var(--c-violet); }
+.st-key-mark_pills button[aria-pressed="false"] .stMarkdownColoredBackground { background-image:none; }
+.st-key-mark_pills button[aria-pressed="false"] .stMarkdownColoredText { border-bottom-color:transparent; }
+.st-key-mark_pills button[aria-pressed="false"] p, .st-key-mark_pills button[aria-pressed="false"] p span { color:var(--pencil) !important; }
+/* 찾지 못한 카드: 점선·투명 바탕으로 가볍게 */
+.pp-card.missing { background:transparent; border-style:dashed; }
+.pp-card.missing .pp-kind { color:var(--pencil); }
+@media (max-width: 640px) { .pp-card.missing { min-height:0; } }
+/* 번역하기 옆 한 줄 전송 안내 */
+.pp-send-note { font-size:13px; color:var(--pencil); line-height:1.5; }
+/* 위 막대 아래 논문 진행선 */
+.pp-progress { height:3px; background:var(--rule-soft); border-radius:2px; overflow:hidden; margin-top:2px; }
+.pp-progress span { display:block; height:100%; background:var(--c-blue); border-radius:2px; }
+.st-key-loaded_bar [data-testid="stMarkdown"]:has(.pp-progress) { margin-bottom:0 !important; }
 </style>
 """
 
@@ -689,6 +725,15 @@ def loaded_bar(a) -> None:
                            help="번역·뜻 풀이 결과를 파일로 받아요. 다른 PC에서 '결과 파일 불러오기'로 넣으면 다시 번역하지 않아요.")
         c2.button("다시 넣기", key="reinput_btn", icon=":material/upload_file:", use_container_width=True,
                   on_click=set_show_input, args=(True,), help="다른 PDF·arXiv ID·텍스트를 넣어요")
+        # 논문을 어디까지 읽었는지: 막대 아래 가는 진행선(초록 → 본문 절 → 결론). PDF 논문일 때만
+        stops = reading_stops()
+        at = stop_now(stops) if stops else None
+        if at is not None and len(stops) > 1:
+            pct = round((at + 1) / len(stops) * 100)
+            st.markdown(f'<div class="pp-progress" role="progressbar" aria-label="논문 읽은 위치" aria-valuemin="1" '
+                        f'aria-valuemax="{len(stops)}" aria-valuenow="{at + 1}" '
+                        f'title="논문 순서 {at + 1} / {len(stops)} · {esc(stops[at][2])}">'
+                        f'<span style="width:{pct}%"></span></div>', unsafe_allow_html=True)
 
 
 def reading_helper(a) -> None:
@@ -1249,7 +1294,11 @@ def mark_chips(a) -> None:
     if not opts:
         st.markdown('<div class="pp-chips"><span class="pp-meta">표시할 표현이 없어요</span></div>', unsafe_allow_html=True)
         return
-    label = {k: f":{CHIP_COLOR[color]}[●] {name} {full[k]}" for k, name, color in CHIPS}
+    # 칩이 곧 범례: 본문에서 마커로 칠하는 표시는 이름에 같은 마커(배경색 → CSS가 마커 획으로), 밑줄 표시(반복 용어 실선,
+    # 어려운 단어 점선)는 이름에 같은 밑줄(글자색 → CSS가 밑줄로). 끈 칩은 CSS가 표시를 지운다
+    under = {"term": "blue", "jargon": "violet"}
+    label = {k: (f":{under[k]}[{name}] {full[k]}" if k in under else f":{CHIP_COLOR[color]}-background[{name}] {full[k]}")
+             for k, name, color in CHIPS}
     ss.mark_pills = [k for k in opts if CHIP_RULE[k] in ss.active_rules]   # 규칙 체크박스와 같은 상태를 쓴다
     st.pills("형광펜 켜고 끄기", opts, selection_mode="multi", format_func=label.get, key="mark_pills",
              on_change=on_chip_change, args=(tuple(opts),), label_visibility="collapsed",
@@ -1441,6 +1490,7 @@ def skeleton_card(card, a, ko: str | None = None, ko_ul=None) -> str:
             body += f'<div class="pp-sk-ko">{render_layers(ko, [], ko_ul)}</div>'
         basis = card.label
     est = " est" if card.basis == "position" else ""
+    est += " missing" if card.sentence_idx is None else ""   # 찾지 못한 카드는 가볍게(찾은 문장에 눈이 먼저 가게)
     return (f'<div class="pp-panel pp-card {color}{est}"><div class="pp-card-head"><div class="pp-kind">'
             f'<span class="pp-kdot"></span>{title}</div><div class="pp-basis {basis_cls}" title="{esc(basis_tip)}">'
             f'{esc(basis)}</div></div>'
@@ -1542,14 +1592,14 @@ def paper_overview(paper) -> None:
     ss = st.session_state
     titles = [s.title for s in paper.sections]
     pages = paper_pages(paper)
-    st.markdown(sec_head("00", "논문 쪽 고르기", f"{clip(paper.title, 70)} · {len(titles)}개 절 · 약 {paper.chars:,}자"),
-                unsafe_allow_html=True)
+    # 읽은 쪽 수 같은 알림은 제목 줄 오른쪽 설명에 함께(원문까지의 세로 거리를 줄인다)
+    note = f"{clip(paper.title, 70)} · {len(titles)}개 절 · 약 {paper.chars:,}자"
     if paper.notes:
-        st.caption(" ".join(paper.notes))
+        note += " · " + " ".join(paper.notes)
+    st.markdown(sec_head("00", "논문 쪽 고르기", note), unsafe_allow_html=True)
     with st.container(key="paper_nav"):
         ss.setdefault("paper_page", ss.source.get("page"))     # 입력 칸을 열었다 닫으면 위젯 상태가 지워져 다시 채운다
         labels = {p: (f"{p} · {len(ids)}개 절" if p == "본문" else p) for p, ids in pages.items()}
-        st.markdown('<div class="pp-nav-label">쪽 고르기 · 초록 / 본문 / 결론</div>', unsafe_allow_html=True)
         st.segmented_control("쪽", list(pages), format_func=labels.get, key="paper_page", on_change=on_page_change,
                              label_visibility="collapsed")
         if "결론" not in pages:
@@ -2557,9 +2607,15 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
     tkey = text_key(a.text)
     file_cache = ss.source["kind"] in ("demo", "arxiv")   # 붙여 넣은 텍스트의 번역은 파일에 남기지 않는다
     with st.container(key="ko_panel"):
-        h1, h2 = st.columns([3, 1.3], vertical_alignment="center")
+        # 번역 전에는 제목·번역하기·전송 안내·켜기를 한 줄로(원문까지의 세로 거리를 줄인다)
+        pending = ss.show_translation and ss.translations.get((tkey, True)) is None
+        if pending:
+            h1, hb, hn, h2 = st.columns([1.15, 0.9, 2.6, 1], vertical_alignment="center")
+        else:
+            h1, h2 = st.columns([3, 1.3], vertical_alignment="center")
+            hb = hn = None
         h1.markdown('<div class="pp-reader-title"><span class="pp-lang">KO</span>한국어 번역 '
-                    '<span class="pp-meta">· 문장별 대응</span></div>', unsafe_allow_html=True)
+                    + ('' if pending else '<span class="pp-meta">· 문장별 대응</span>') + '</div>', unsafe_allow_html=True)
         with h2:
             on = st.toggle("번역 켜짐", key="show_translation")
         if not on:
@@ -2569,10 +2625,12 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
 
         res = ss.translations.get((tkey, True))
         if res is None:
-            st.markdown(f'<div class="pp-notice"><b>번역하기</b>를 누르면 위 영어 문장이 <b>{engine_name()}로 전송</b>돼요. '
-                        '이 앱은 입력을 저장하지 않지만, 번역 서비스 측의 보관 정책은 그 서비스의 약관을 따라요. '
-                        '개인정보는 넣지 마세요.</div>', unsafe_allow_html=True)
-            if st.button("번역하기", type="primary", key="translate_btn"):
+            # 버튼과 전송 안내를 한 줄로(원문까지의 거리를 줄인다). 보관 정책은 ⓘ에, 전송 사실·개인정보 주의는 늘 보이게
+            b1, b2 = (hb, hn) if hb is not None else st.columns([1, 4.2], vertical_alignment="center")
+            b2.markdown(f'<div class="pp-send-note">누르면 영어 문장이 <b>{engine_name()}로 전송</b>돼요. '
+                        '개인정보는 넣지 마세요. <span class="pp-info" title="이 앱은 입력을 저장하지 않지만, 번역 서비스 측의 '
+                        '보관 정책은 그 서비스의 약관을 따라요.">ⓘ</span></div>', unsafe_allow_html=True)
+            if b1.button("번역하기", type="primary", key="translate_btn", use_container_width=True):
                 with st.spinner("번역하는 중…"):
                     ss.translations[(tkey, True)] = run_translate(
                         sents, a, True, file_cache, **dict(zip(("marks", "underlines"), translation_layers(ss.input_text))))
@@ -2694,17 +2752,17 @@ def reading_page() -> None:
     t1.markdown(sec_head("02", "원문과 번역 읽기"), unsafe_allow_html=True)
     with t3:
         st.toggle("읽기 전용 단계 보기", key="show_steps")
-    with st.container(key="chip_row"):
-        st.markdown('<div class="pp-nav-label">형광펜 켜고 끄기 · 누르면 그 표시만 꺼지고 다시 누르면 켜져요</div>',
-                    unsafe_allow_html=True)
-        mark_chips(a)
+    # 읽기 도구 한 줄: 형광펜 칩(왼쪽)과 읽기 모드(오른쪽). 원문까지의 거리를 줄인다(칩 설명은 칩의 도움말 ⓘ에)
+    ss.setdefault("read_mode", READ_MODES[0])
+    with st.container(key="read_tools"):
+        tc1, tc2 = st.columns([1.15, 1], vertical_alignment="center")
+        with tc1, st.container(key="chip_row"):
+            mark_chips(a)
+        with tc2, st.container(key="read_mode_bar"):
+            st.segmented_control("읽기 모드", READ_MODES, key="read_mode", format_func=lambda m: READ_MODE_LABEL[m],
+                                 label_visibility="collapsed", on_change=track_position)
     if ss.show_steps:
         steps_panel(a)
-
-    ss.setdefault("read_mode", READ_MODES[0])
-    with st.container(key="read_mode_bar"):
-        st.segmented_control("읽기 모드", READ_MODES, key="read_mode", format_func=lambda m: READ_MODE_LABEL[m],
-                             label_visibility="collapsed", on_change=track_position)
     mode = ss.read_mode or READ_MODES[0]       # 같은 버튼을 다시 눌러 선택이 풀려도 기본 모드로 보여 준다
     parts = part_picker(a)                     # 긴 글은 소제목(없으면 30문장) 단위로 나눠 읽는다
     uls = card_underlines(a)
