@@ -277,6 +277,24 @@ def test_plural_counts_as_same_term_and_ed_words_excluded():
 def test_term_toggle_and_marks():
     t = "A parser parses. The parser fails. Every parser learns."
     a = analyze(t)
-    assert [a.text[m.start:m.end] for m in a.marks if m.category == "term"] == ["parser", "parser", "parser"]
+    terms = [m for m in a.marks if m.category == "term"]
+    assert [a.text[m.start:m.end] for m in terms] == ["parser"]          # 처음 나온 곳에만 표시
+    assert terms[0].start == t.index("parser") and "3번" in terms[0].tip  # 설명창에는 등장 횟수 그대로
     assert a.counts["term"] == 1
     assert analyze(t, P.DEFAULT_ACTIVE_RULES - {"TERM"}).counts["term"] == 0
+
+
+def test_term_marks_skip_common_words_names_and_figures():
+    """흔한 영어(because·people)·이름(대문자로만 나오는 Kendi)·그림 표기(Fig)는 반복돼도 표시하지 않는다."""
+    t = ("Kendi says people argue because tokenizers fail. Kendi notes people disagree because tokenizers drift. "
+         "Kendi adds that people worry because tokenizers break, as Fig 1 and Fig 2 and Fig 3 show.")
+    a = analyze(t)
+    assert [a.text[m.start:m.end] for m in a.marks if m.category == "term"] == ["tokenizers"]
+
+
+def test_term_marks_keep_top_five():
+    """많이 나온 순서로 5개까지만 표시한다(형광펜이 배경처럼 보이지 않게)."""
+    words = ["tokenizer", "embedding", "lexicon", "morpheme", "phoneme", "corpus", "treebank"]
+    t = " ".join(f"The {w} helps." for w in words for _ in range(3)) + " The tokenizer helps. The embedding helps."
+    shown = [t[m.start:m.end] for m in analyze(t).marks if m.category == "term"]
+    assert len(shown) == P.TERM_TOP == 5 and shown[:2] == ["tokenizer", "embedding"]

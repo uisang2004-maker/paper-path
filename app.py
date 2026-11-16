@@ -260,7 +260,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 색은 늘리지 않는다: 용어 설명은 약어와 같은 파랑, 수치 근거는 확신과 같은 청록, 반복 용어는 파랑 얇은 밑줄 */
 .pp-m.definition { color:var(--link); background:var(--blue-soft); border-bottom:1px solid var(--c-blue); }
 .pp-m.number { color:var(--teal-ink); background:var(--teal-soft); }
-.pp-m.term { color:inherit; font-weight:600; background:transparent; padding:0; border-bottom:1.5px solid var(--c-blue); border-radius:0; }
+.pp-m.term { color:inherit; font-weight:inherit; background:transparent; padding:0; border-bottom:1.5px solid var(--c-blue); border-radius:0; }
 /* 설명창은 단어 위쪽에 띄운다: 아래에 띄우면 곧 읽을 다음 줄을 가린다(카드 안은 위가 잘리므로 아래) */
 .pp-m:hover::after, .pp-m:focus::after { content: attr(data-tip); position:absolute; left:0; bottom:calc(100% + 6px); z-index:20;
   background:var(--ink); color:#fff; font-size:12px; font-weight:400; line-height:1.45; padding:7px 9px; border-radius:7px;
@@ -557,7 +557,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   background-image:linear-gradient(100deg, rgba(var(--mk),0) .5%, rgba(var(--mk),.62) 2.5%, rgba(var(--mk),.42) 9%,
                                    rgba(var(--mk),.38) 90%, rgba(var(--mk),.6) 96.5%, rgba(var(--mk),0) 99.5%);
   -webkit-box-decoration-break:clone; box-decoration-break:clone; }
-.pp-m.term { font-weight:600; }
+.pp-m.term { font-weight:inherit; }   /* 반복 용어는 굵게 하지 않고 가는 밑줄만: 마커보다 한 단계 약하게 */
 /* 3줄 뼈대 핵심 문장의 밑줄은 연필처럼 가늘게 */
 .pp-u { text-decoration-thickness:1.5px; text-underline-offset:5px; }
 @media (max-width: 640px) {

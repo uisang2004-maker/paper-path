@@ -136,12 +136,15 @@ def _norm_term(w: str) -> str:
 
 
 def frequent_terms(text: str) -> list[tuple[str, int, list[tuple[int, int]]]]:
-    """3번 이상 나오는 용어와 등장 위치. 두 단어 용어를 먼저, 남은 한 단어를 그다음에 찾는다."""
+    """3번 이상 나오는 용어와 등장 위치. 두 단어 용어를 먼저, 남은 한 단어를 그다음에 찾는다.
+    두 단어 안에 아주 흔한 낱말(because·help)이 있으면 우연히 붙은 말이라 묶지 않는다('because tokenizers')."""
+    from src.glossary import word_zipf     # glossary가 이 모듈을 가져오므로 함수 안에서(순환 import 방지)
     toks = [(m.start(), m.end(), _norm_term(m.group(0))) for m in P.TERM_WORD.finditer(text)]
     content = [t for t in toks if t[2] not in P.TERM_STOPWORDS]
     pairs: dict[tuple[str, str], list[tuple[int, int]]] = {}
     for (a1, b1, w1), (a2, b2, w2) in zip(content, content[1:]):
-        if re.fullmatch(r"[ \t]+", text[b1:a2]) and w1 not in P.TERM_GENERIC:
+        if re.fullmatch(r"[ \t]+", text[b1:a2]) and w1 not in P.TERM_GENERIC \
+                and max(word_zipf(w1), word_zipf(w2)) < P.TERM_PHRASE_WORD_ZIPF:
             pairs.setdefault((w1, w2), []).append((a1, b2))
     out, taken = [], []
     for (w1, w2), spans in sorted(pairs.items(), key=lambda kv: -len(kv[1])):
@@ -158,6 +161,26 @@ def frequent_terms(text: str) -> list[tuple[str, int, list[tuple[int, int]]]]:
         if len(spans) >= P.TERM_MIN_COUNT:
             out.append((w, len(spans), spans))
     return out
+
+
+def _capitalized(text: str, spans: list[tuple[int, int]]) -> bool:
+    """쓰인 자리의 절반 넘게 대문자로 시작하면 이름(Kendi, Weber)·제품명으로 본다."""
+    return sum(text[a].isupper() for a, _ in spans) * 2 > len(spans)
+
+
+def key_terms(text: str) -> list[tuple[str, int, list[tuple[int, int]]]]:
+    """본문에 표시할 반복 용어: frequent_terms 중 흔한 영어·이름·그림 표기를 빼고, 많이 나온 순서(같으면 더 드문 말)로
+    TERM_TOP개까지, 처음 나온 자리 하나만. 등장 횟수는 그대로 돌려 설명창에 쓴다."""
+    from src import glossary as G          # glossary가 이 모듈을 가져오므로 함수 안에서 가져온다(순환 import 방지)
+    keep = []
+    for term, n, spans in frequent_terms(text):
+        words = term.split()
+        limit = P.TERM_COMMON_ZIPF_PHRASE if len(words) > 1 else P.TERM_COMMON_ZIPF
+        if any(w in P.TERM_DISPLAY_SKIP for w in words) or G.term_zipf(term) >= limit or _capitalized(text, spans):
+            continue
+        keep.append((term, n, spans))
+    keep.sort(key=lambda t: (-t[1], G.term_zipf(t[0])))
+    return [(term, n, sorted(spans)[:1]) for term, n, spans in keep[:P.TERM_TOP]]
 
 
 def _marks(text: str, acronyms: dict[str, str | None], active: frozenset) -> list[Mark]:
@@ -182,7 +205,7 @@ def _marks(text: str, acronyms: dict[str, str | None], active: frozenset) -> lis
         for m in P.DEFINITION_CUE.finditer(text):
             marks.append(Mark(m.start(), m.end(), "definition", "DEFINITION", f"용어 설명·예시 · {P.DEFINITION_RULE.reason}"))
     if "TERM" in active:
-        for term, n, spans in frequent_terms(text):
+        for term, n, spans in key_terms(text):   # 핵심 용어 몇 개만, 처음 나온 곳에(전부 칠하면 형광펜이 배경이 된다)
             for x, y in spans:
                 marks.append(Mark(x, y, "term", "TERM", f"반복 용어 · '{term}'이(가) 이 글에 {n}번 나와요"))
     if "HEDGE" in active:

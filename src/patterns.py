@@ -242,14 +242,30 @@ dataset datasets
 """.split())
 """어느 논문에나 자주 나오는 일반어. 한 단어로는 반복 용어로 보지 않는다(두 단어 용어의 뒷부분으로는 허용: 'language model')."""
 
+TERM_TOP = 5
+"""본문에 표시하는 반복 용어는 글(절)마다 이 개수까지만. 많이 칠하면 형광펜이 배경처럼 보여 중요한 곳을 못 알린다."""
+
+TERM_COMMON_ZIPF = 4.5
+"""한 단어 반복 용어는 일상 영어 빈도(wordfreq zipf)가 이보다 낮은 말만 표시(because·people·user 같은 흔한 말 제외)."""
+
+TERM_COMMON_ZIPF_PHRASE = 5.0
+"""두 단어 용어는 더 드문 낱말 기준 빈도가 이보다 낮으면 표시(두 단어 묶음은 그 자체로 더 구체적이라 조금 너그럽게)."""
+
+TERM_PHRASE_WORD_ZIPF = 5.5
+"""두 단어 용어 안에 아주 흔한 낱말(because·help·people)이 있으면 우연히 붙은 말로 보고 표시하지 않는다."""
+
+TERM_DISPLAY_SKIP = frozenset("fig figure table section appendix eq equation see et al chapter page".split())
+"""그림·표·절을 가리키는 말. 반복돼도 내용 용어가 아니라 표시하지 않는다."""
+
 TERM_RULE = Rule(
     "TERM", "term", "반복 용어",
     TERM_WORD,
     "이 글 안에서 3번 이상 나오는 용어. 두 단어 용어('language model')를 먼저 찾고, 남는 한 단어를 찾는다. "
-    "기능어·일반어·-ed로 끝나는 한 단어(형용사·과거분사)는 뺀다. 복수형은 단수와 같은 용어로 센다.",
+    "기능어·일반어·-ed로 끝나는 한 단어(형용사·과거분사)는 뺀다. 복수형은 단수와 같은 용어로 센다. "
+    "본문 표시는 흔한 영어(빈도 zipf 4.5 이상)·사람 이름·그림 표기를 빼고 많이 나온 순서로 5개까지, 처음 나온 곳에만.",
     reason="이 글에서 계속 나오는 핵심 용어예요. 뜻을 먼저 잡아 두면 나머지가 쉬워져요",
     examples=("language model", "sentence", "lexicon"),
-    misses=("2번 이하로 나오는 용어", "철자가 바뀐 변형(-ing 형 등)"),
+    misses=("2번 이하로 나오는 용어", "철자가 바뀐 변형(-ing 형 등)", "6번째로 많이 나온 용어부터", "흔한 영어로 쓰인 핵심어(model 등)"),
     toggleable=True,
 )
 
