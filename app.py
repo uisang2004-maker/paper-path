@@ -491,6 +491,17 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .st-key-demo_btn button:hover { background:var(--blue-soft) !important; }
 .st-key-demo_btn button p { font-weight:700; }
 
+@media (max-width: 1100px) {
+  /* 절반 화면(약 900~1000px)에서 자주 쓴다: 한 줄에 다 넣으면 자료 이름이 좁은 기둥이 되고 버튼 글자가 '사…'로 잘리므로,
+     자료 이름은 윗줄 한 줄(넘치면 …), 버튼 네 개는 아랫줄에 글자 그대로 */
+  .st-key-loaded_bar [data-testid="stHorizontalBlock"] { flex-direction:row !important; flex-wrap:wrap !important; gap:6px 8px !important; }
+  .st-key-loaded_bar [data-testid="stColumn"] { flex:1 1 0 !important; min-width:0 !important; width:auto !important; }
+  .st-key-loaded_bar [data-testid="stColumn"]:first-child { flex:1 1 100% !important; }
+  .st-key-loaded_bar [data-testid="stMarkdown"], .st-key-loaded_bar [data-testid="stMarkdownContainer"] {
+    margin-bottom:0 !important; }   /* 기본 음수 아래 여백이 버튼 줄을 글자 위로 끌어올리지 않게 */
+  .pp-loaded-src { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .st-key-loaded_bar button { min-height:38px; }
+}
 @media (max-width: 640px) {
   /* 위에 붙은 막대가 화면을 가리지 않게: 자료 이름 한 줄 + 아이콘 버튼 네 개를 한 줄로 */
   .st-key-loaded_bar { padding:6px 10px; }
