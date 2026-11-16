@@ -89,15 +89,17 @@ ICON = {
 CSS = """
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap');
 :root {
-  --ink:#14263e; --muted:#52677f; --subtle:#66798b; --line:#e2e9f2; --surface:#ffffff; --canvas:#f6f8fc;
+  --ink:#14263e; --muted:#52677f; --subtle:#66798b; --line:#dde3e9; --surface:#ffffff; --canvas:#f6f8fc;
   --navy:#152c49; --blue:#3979b5; --blue-soft:#eaf3fc; --teal:#21877f; --teal-soft:#eaf7f4;
   --amber:#9a681d; --amber-soft:#fff7e8; --violet:#7156a2; --violet-soft:#f3effa;
-  --radius:14px; --shadow:0 4px 18px rgba(26,54,83,.045), 0 1px 2px rgba(25,49,77,.03);
+  /* 책상(차가운 회색) 위에 흰 종이: 그림자·그라데이션 대신 가는 선으로 나눈다. 색은 형광펜에만 쓴다 */
+  --radius:10px; --shadow:none; --desk:#f1f3f5; --rule:#d9dfe5; --pencil:#5b6875; --paper-ink:#1b2733;
+  --serif:"Source Serif 4", "Source Serif Pro", Georgia, "Times New Roman", serif;
 }
 html, body, [data-testid="stAppViewContainer"], .stApp {
-  background: radial-gradient(780px 300px at 88% -8%, rgba(216,232,247,.46), transparent 70%),
-              linear-gradient(180deg,#f8fafd 0%,#f4f7fb 100%) !important;
+  background: var(--desk) !important;
   color: var(--ink);
   font-family: Pretendard, "Malgun Gothic", "Segoe UI", sans-serif;
 }
@@ -112,21 +114,21 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .stApp, [data-testid="stMain"], [data-testid="stAppViewContainer"] { overflow-x: hidden; }
 .st-key-topbar { position: relative; padding: 10px 0; margin-bottom: 6px; }
 .st-key-topbar::before { content:""; position:absolute; top:0; bottom:0; left:-100vw; right:-100vw; z-index:0;
-  background: rgba(255,255,255,.94); border-bottom: 1px solid #e4eaf2; box-shadow: 0 2px 12px rgba(22,46,74,.025); }
+  background: #fff; border-bottom: 1px solid var(--rule); }
 .st-key-topbar > div { position: relative; z-index: 1; }
 .pp-brand { display:flex; align-items:center; gap:12px; min-height:46px; }
 .pp-mark { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:#fff;
-  background: linear-gradient(145deg,#214d75 0%,#142f4f 100%); box-shadow:0 5px 12px rgba(24,59,96,.18); flex:none; }
+  background:#183b60; flex:none; }
 .pp-name { font-size:16px; font-weight:750; letter-spacing:-.45px; color:#172c46; line-height:1.1; }
-.pp-sub { color:#5d7286; font-size:11.5px; margin-top:3px; }
+.pp-sub { color:#52667a; font-size:11.5px; margin-top:3px; }
 .st-key-nav [role="radiogroup"] { gap: 6px; flex-wrap: wrap; }
 .st-key-nav [role="radiogroup"] label { padding: 8px 14px; border-radius: 10px; margin: 0; cursor: pointer; }
 .st-key-nav [data-testid="stRadioOption"] > div > div:first-child:not([data-testid]) { display:none !important; }
-.st-key-nav [data-testid="stRadioOption"] p { font-size:14px; font-weight:650; color:#5d7286; }
+.st-key-nav [data-testid="stRadioOption"] p { font-size:14px; font-weight:650; color:#52667a; }
 .st-key-nav [data-testid="stRadioOption"][data-selected="true"] { background:#eef4fa; box-shadow: inset 0 -3px 0 #2d78a8; }
 .st-key-nav [data-testid="stRadioOption"][data-selected="true"] p { color:#1b456d; font-weight:750; }
 .st-key-nav [data-testid="stRadioOption"]:focus-within { outline: 2px solid #5c9ac0; outline-offset: 2px; }
-.pp-status { display:flex; justify-content:flex-end; align-items:center; gap:12px; min-height:46px; color:#5d7286; font-size:12.5px; }
+.pp-status { display:flex; justify-content:flex-end; align-items:center; gap:12px; min-height:46px; color:#52667a; font-size:12.5px; }
 .pp-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:6px; background:#36a28d; }
 .pp-dot.err { background:#c2410c; }
 .pp-avatar { width:32px; height:32px; border-radius:50%; background:#edf2f7; display:grid; place-items:center; color:#60758b; font-size:11px; font-weight:750; }
@@ -134,7 +136,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 첫 화면 히어로: 왼쪽 소개, 오른쪽은 배경 이미지(지구본·A↔文·논문) */
 .pp-hero { position:relative; overflow:hidden; border-radius:18px; margin:6px 0 4px; min-height:300px;
   background:#eaf3fc url('app/static/hero.jpg') right center / cover no-repeat;
-  border:1px solid #dbe7f4; box-shadow:0 10px 30px rgba(21,44,73,.08); }
+  border:1px solid var(--rule); }
 .pp-hero::before { content:""; position:absolute; inset:0;
   background:linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.88) 34%, rgba(234,243,252,.25) 62%, rgba(234,243,252,0) 100%); }
 .pp-hero-text { position:relative; z-index:1; max-width:560px; padding:44px 40px 40px; }
@@ -144,7 +146,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-hero-desc { font-size:16px; color:#3e5672; margin-top:14px; line-height:1.6; }
 .pp-hero-badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
 .pp-hero-badge { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:999px; font-size:12.5px;
-  font-weight:750; color:#fff; background:linear-gradient(135deg,#3979b5,#152c49); box-shadow:0 4px 12px rgba(57,121,181,.28); }
+  font-weight:750; color:#fff; background:#183b60; }
 .pp-hero-badge.soft { color:#152c49; background:rgba(255,255,255,.85); border:1px solid #cfe0f1; box-shadow:none; }
 @media (max-width: 900px) {
   .pp-hero { min-height:0; background-position:78% center; }
@@ -165,7 +167,6 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 패널 공통 */
 .st-key-input_panel, .st-key-ko_panel, .st-key-ev_abbr, .st-key-ev_rule, .st-key-steps_panel, .st-key-rule_panel {
   background: var(--surface); border:1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; }
-.st-key-input_panel { border-left: 3px solid #4f86ad; }
 .pp-panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
 .pp-input-copy { display:flex; gap:12px; align-items:center; }
 .pp-lead { width:32px; height:32px; border-radius:9px; background:#eef4f8; color:#53738d; display:grid; place-items:center; flex:none; }
@@ -180,17 +181,16 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-sec { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:10px; }
 .pp-sec-title { display:flex; align-items:center; gap:9px; font-size:17px; font-weight:780; letter-spacing:-.3px; color:var(--ink); }
 .pp-sec-num { width:24px; height:24px; display:grid; place-items:center; border-radius:7px; background:#edf3f8; color:#4c6378; font-size:11px; font-weight:800; }
-.pp-sec-note { color:#60758a; font-size:12px; }
+.pp-sec-note { color:#52667a; font-size:12px; }
 
 /* 3줄 뼈대 */
 .pp-card { position:relative; overflow:hidden; padding:15px 17px 14px 19px; min-height:150px; height:100%; }
-.pp-card:before { content:""; position:absolute; top:0; left:0; bottom:0; width:3px; background:#6c9dbb; }
-.pp-card.teal:before { background:#3a9c92; } .pp-card.violet:before { background:#8b79b5; }
+.pp-card:before { display:none; }   /* 왼쪽 색 띠 대신 제목 앞 점이 종류를 알린다 */
 .pp-card-head { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:9px; }
 .pp-kind { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:780; color:#36536d; }
 .pp-kdot { width:8px; height:8px; border-radius:50%; background:#6c9dbb; }
 .teal .pp-kdot { background:#3a9c92; } .violet .pp-kdot { background:#8b79b5; }
-.pp-basis { color:#60758a; font-size:11.5px; white-space:nowrap; }
+.pp-basis { color:#52667a; font-size:11.5px; white-space:nowrap; }
 .pp-basis.position { color:#9a681d; } .pp-basis.none { color:#586b80; }
 .pp-card.est .pp-sk-text { color:#22364d; font-weight:560; }   /* 위치 추정 카드: 형광펜·밑줄이 없어 흐려 보이지 않게 */
 .pp-sk-text { font-size:14px; color:#40536a; line-height:1.65; letter-spacing:-.1px; }
@@ -206,7 +206,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-u .pp-u.def { text-decoration: none; color:#205f90; }   /* 핵심 내용 밑줄 안의 용어 설명은 글자색으로만 */
 .pp-u .pp-m, .pp-u [class^="pp-sig-"] { background: transparent !important; border-bottom: 0 !important; padding: 0; }
 .pp-reason { display:flex; align-items:flex-start; gap:6px; margin-top:10px; color:#5c7084; font-size:12px; line-height:1.5; }
-.pp-limit { color:#60758a; font-size:12px; margin-top:2px; }
+.pp-limit { color:#52667a; font-size:12px; margin-top:2px; }
 
 /* 칩 */
 .pp-chips { display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end; align-items:center; min-height:38px; }
@@ -256,7 +256,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-mini-title { display:flex; flex-wrap:wrap; align-items:center; gap:7px; font-size:13.5px; color:#3b5168; font-weight:780; margin-bottom:4px; }
 .pp-mini-desc { color:#5c7084; font-size:12.5px; line-height:1.5; }
 .pp-snip { color:#678096; font-family:ui-monospace, Consolas, monospace; font-size:11.5px; background:#f5f8fa; padding:3px 6px; border-radius:5px; }
-.pp-foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:6px 2px 0; color:#60758a; font-size:12px; }
+.pp-foot { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:6px 2px 0; color:#52667a; font-size:12px; }
 .pp-foot strong { color:#52697f; }
 
 /* 이해를 돕는 자료: 흐름도 */
@@ -271,7 +271,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-flow-text { font-size:13px; color:#34485f; line-height:1.55; }
 .pp-flow-ko { font-size:12px; color:#5c7084; margin-top:5px; line-height:1.5; }
 .pp-flow-arrow { align-self:center; color:#9aa8b6; font-size:18px; font-weight:700; }
-.pp-flow-note { color:#60758a; font-size:12px; margin-top:6px; }
+.pp-flow-note { color:#52667a; font-size:12px; margin-top:6px; }
 @media (max-width: 900px) { .pp-flow-arrow { display:none; } }
 
 .pp-gloss th, .pp-gloss td:nth-child(-n+5) { white-space: nowrap; }
@@ -406,14 +406,14 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 
 /* 자료를 넣은 뒤 위쪽 막대 */
 [data-testid="stLayoutWrapper"]:has(> .st-key-loaded_bar) { position:sticky; top:0; z-index:40; }  /* 막대를 감싼 칸이 막대와 높이가 같아 그 바깥에 붙인다 */
-.st-key-loaded_bar { background:var(--surface); border:1px solid var(--line); border-left:3px solid #4f86ad;
+.st-key-loaded_bar { background:var(--surface); border:1px solid var(--rule);
   border-radius:12px; padding:8px 14px; box-shadow:var(--shadow); }
 .pp-loaded { font-size:13.5px; color:#2c4560; }
 .pp-loaded-label { font-size:11.5px; font-weight:750; color:#4c6378; background:#eef3f8; border-radius:6px;
   padding:2px 7px; margin-right:8px; }
 
 /* PDF 끌어다 놓기 칸 */
-.st-key-pdf_drop { border:2px dashed #9cc0e3; border-radius:14px; background:#eaf3fc; padding:16px 18px 8px; }
+.st-key-pdf_drop { border:1.5px dashed #aab6c2; border-radius:10px; background:#fafbfc; padding:18px 18px 8px; }
 .pp-drop-kicker { font-size:12px; font-weight:800; color:#3979b5; text-align:center; letter-spacing:.4px; }
 .pp-drop-title { font-size:18px; font-weight:800; color:#152c49; text-align:center; margin-top:2px; }
 .pp-drop-hint { font-size:12.5px; color:#5c7084; text-align:center; margin:2px 0 8px; }
@@ -454,7 +454,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-loaded-src { min-width:0; }
 .pp-jump { flex:none; padding:6px 4px; }
 /* 형광펜 칩의 주황 점: 칩 바탕과 3:1 이상 */
-.st-key-mark_pills .stMarkdownColoredText[style*="226, 102, 12"] { color:#b45309 !important; }
+.st-key-mark_pills .stMarkdownColoredText[style*="226, 102, 12"] { color:#a16207 !important; }   /* 노란 형광펜과 같은 계열 */
 /* 끌어다 놓기 칸: 안쪽 흰 상자를 없애 점선 칸 하나로, 놓는 자리는 점선 칸 전체, 버튼은 가운데 */
 .st-key-pdf_drop { position:relative; padding-bottom:62px; }
 .st-key-pdf_drop [data-testid="stElementContainer"]:has([data-testid="stFileUploader"]) { position:static; }   /* 놓는 자리가 점선 칸 기준이 되게 */
@@ -486,6 +486,53 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   .pp-jump { padding:8px 4px; }
   /* 손가락으로 누르는 버튼은 40px 이상 */
   [data-testid="stButtonGroup"] button { min-height:40px !important; }
+}
+
+/* ================= 종이와 형광펜: 이 앱의 개성은 원문 칸 한 곳에만 =================
+   읽는 칸은 인쇄한 논문 한 장처럼(세리프·짧은 줄·여백에 적은 문장 번호), 형광펜은 실제 마커처럼.
+   나머지 화면은 그림자·색 띠 없이 조용하게 둔다. */
+.pp-panel { border-color:var(--rule); border-radius:6px; }
+.pp-hero { border-radius:10px; }
+.pp-mark { border-radius:9px; }
+/* 한 칸으로 읽을 때 한 줄이 80자 안팎이 되게(논문 본문 폭) */
+.pp-narrow, .st-key-ko_only, .st-key-part_nav_narrow, .st-key-ko_narrow { max-width:780px; }
+.pp-pair-en .pp-text, .pp-pair-ko { max-width:78ch; }
+/* 영어 원문(본문 문장·3줄 뼈대 인용)은 논문처럼 세리프, 한국어와 화면 글자는 그대로 */
+.stApp .pp-sent:not(.pp-ko) > .pp-text, .stApp .pp-sent:not(.pp-ko) > .pp-text *,
+.stApp .pp-side-en .pp-text, .stApp .pp-side-en .pp-text *,
+.stApp .pp-pair-en .pp-text, .stApp .pp-pair-en .pp-text *,
+.stApp .pp-sk-text, .stApp .pp-sk-text * { font-family:var(--serif); }
+.stApp .pp-sk-text .pp-sk-no, .stApp .pp-sk-text .pp-more-btn { font-family:Pretendard, "Malgun Gothic", sans-serif; }
+.pp-sent:not(.pp-ko) > .pp-text, .pp-side-en .pp-text, .pp-pair-en .pp-text {
+  font-size:16.5px; line-height:1.75; color:var(--paper-ink); letter-spacing:0; }
+.pp-sk-text, .pp-card.est .pp-sk-text { font-size:15px; line-height:1.65; color:var(--paper-ink); letter-spacing:0; font-weight:400; }
+.stApp .pp-m::after { font-family:Pretendard, "Malgun Gothic", sans-serif; letter-spacing:0; }   /* 설명창은 화면 글자 */
+/* 문장 번호: 회색 칩 대신 종이 여백에 연필로 적은 번호 */
+.pp-sents { padding:12px 22px 14px 6px; }
+.pp-sent { grid-template-columns:38px 1fr; gap:14px; padding:5px 0; border-bottom:0; }
+.stApp .pp-no { width:auto; height:auto; background:none; border-radius:0; display:block; text-align:right;
+  padding-top:.3em; color:var(--pencil); font-family:var(--serif); font-style:italic; font-size:13px; font-weight:400; }
+.pp-side-row { grid-template-columns:38px minmax(0,1.1fr) minmax(0,.95fr); }
+.pp-side-head { grid-template-columns:38px minmax(0,1.1fr) minmax(0,.95fr); }
+@media (max-width: 760px) { .pp-side-row { grid-template-columns:26px minmax(0,1fr); } }   /* 좁으면 위아래로(앞 규칙 유지) */
+/* 형광펜: 글자색은 잉크 그대로, 글자 아래쪽에 살짝 기운 마커 획(줄이 바뀌어도 줄마다 따로 칠한다) */
+.pp-m.hedge { --mk:255,201,31; }
+.pp-m.abbr, .pp-m.definition { --mk:110,176,240; }
+.pp-m.confident, .pp-m.number { --mk:80,200,140; }
+.pp-m.reference { --mk:180,145,240; }
+.pp-m.hedge, .pp-m.abbr, .pp-m.definition, .pp-m.confident, .pp-m.number, .pp-m.reference {
+  color:inherit; font-weight:600; border-bottom:0; border-radius:.35em .15em .4em .2em; padding:0 .18em; margin:0 -.04em;
+  background-color:transparent; background-repeat:no-repeat; background-size:100% 74%; background-position:0 80%;
+  background-image:linear-gradient(100deg, rgba(var(--mk),0) .5%, rgba(var(--mk),.62) 2.5%, rgba(var(--mk),.42) 9%,
+                                   rgba(var(--mk),.38) 90%, rgba(var(--mk),.6) 96.5%, rgba(var(--mk),0) 99.5%);
+  -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+.pp-m.term { font-weight:600; }
+/* 3줄 뼈대 핵심 문장의 밑줄은 연필처럼 가늘게 */
+.pp-u { text-decoration-thickness:1.5px; text-underline-offset:5px; }
+@media (max-width: 640px) {
+  .pp-sents { padding:10px 14px 12px 2px; }
+  .pp-sent { grid-template-columns:26px 1fr; gap:10px; }
+  .pp-sent:not(.pp-ko) > .pp-text, .pp-side-en .pp-text, .pp-pair-en .pp-text { font-size:16px; }
 }
 </style>
 """
@@ -827,7 +874,7 @@ TOUR_CORE = r"""
     #pp-tour-card .b { font-size:13.5px; line-height:1.7; color:#34485f; }
     #pp-tour-card .row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:8px; }
     #pp-tour-card button { border:0; border-radius:9px; padding:7px 14px; font-weight:700; font-size:13px; cursor:pointer; }
-    #pp-tour-card .skip { background:transparent; color:#60758a; padding-left:0; }
+    #pp-tour-card .skip { background:transparent; color:#52667a; padding-left:0; }
     #pp-tour-card .prev { background:#eef3f8; color:#2c4560; }
     #pp-tour-card .next { background:#152c49; color:#fff; }
     .pp-tour-on { background:#fff3b8 !important; border-radius:4px; animation:pp-tour-pulse 1.1s ease-in-out infinite; }
@@ -1545,11 +1592,10 @@ def topbar() -> None:
             st.button("첫 화면으로", key="go_home", on_click=go_home, help="첫 화면으로")
         with c2, st.container(key="nav"):
             st.radio("페이지", PAGES, key="page", horizontal=True, label_visibility="collapsed")
-        status = ('<span class="pp-dot"></span>규칙 엔진 준비됨' if ok
-                  else '<span class="pp-dot err"></span>규칙 엔진 오류')
+        # 평소에는 상태 표시를 두지 않고(뜻 없는 장식), 규칙 엔진에 문제가 있을 때만 알린다
+        status = "" if ok else '<span class="pp-dot err"></span>규칙 엔진 오류'
         if not auth_ready():
-            c3.markdown(f'<div class="pp-status"><span role="status">{status}</span>'
-                        f'<span class="pp-avatar" aria-hidden="true">PP</span></div>', unsafe_allow_html=True)
+            c3.markdown(f'<div class="pp-status"><span role="status">{status}</span></div>', unsafe_allow_html=True)
             return
         s1, s2 = c3.columns([1.3, 1], vertical_alignment="center")
         s1.markdown(f'<div class="pp-status"><span role="status">{status}</span></div>', unsafe_allow_html=True)
@@ -1593,9 +1639,8 @@ def input_panel() -> None:
     ss = st.session_state
     with st.container(key="input_panel"):
         c1, c2, c5 = st.columns([1.6, 2.4, 2.3], vertical_alignment="center")
-        c1.markdown(f'<div class="pp-input-copy"><div class="pp-lead">{ICON["search"]}</div><div>'
-                    f'<div class="pp-field-label">분석할 논문 넣기</div>'
-                    f'<div class="pp-field-hint">논문 PDF · arXiv ID · 직접 붙여 넣기</div></div></div>', unsafe_allow_html=True)
+        c1.markdown(f'<div class="pp-input-copy"><div>'
+                    f'<div class="pp-field-label">분석할 논문 넣기</div></div></div>', unsafe_allow_html=True)   # 넣는 방식은 옆 버튼이 말해 준다
         with c2:
             mode = st.segmented_control("입력 방식", MODES, key="input_mode", label_visibility="collapsed") or M_PDF
         c5.markdown(f'<div class="pp-privacy">{ICON["shield"]}<span>올린 파일과 붙여 넣은 텍스트는 서버에 저장하지 않아요. '
@@ -1604,10 +1649,10 @@ def input_panel() -> None:
         clicked = False
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
-                st.markdown('<div class="pp-drop-kicker">논문을 넣으면 읽는 길이 시작돼요</div>'
+                st.markdown(
                             '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으세요</div>'
-                            f'<div class="pp-drop-hint">PDF 업로드 · arXiv ID · 텍스트 입력 · 놓으면 바로 절별로 나눠 분석해요 · '
-                            f'{MAX_PDF_MB}MB 이하, 글자를 선택할 수 있는 PDF</div>', unsafe_allow_html=True)
+                            f'<div class="pp-drop-hint">놓으면 바로 절별로 나눠 분석해요. '
+                            f'{MAX_PDF_MB}MB 이하, 글자를 선택할 수 있는 PDF만 읽을 수 있어요.</div>', unsafe_allow_html=True)
                 st.file_uploader("논문 PDF", type=["pdf"], key="pdf_file", label_visibility="collapsed",
                                  on_change=on_pdf_drop,
                                  help="스캔한 이미지 PDF는 글자가 없어 읽지 못해요.")
@@ -2472,7 +2517,7 @@ def interleaved_panel(a) -> None:
         rows.append(f'{sub_row(a, s.idx)}<div class="pp-sent pp-pair"><div class="pp-no">{s.idx + 1}</div><div>'
                     f'<div class="pp-pair-en">{en_html(a, s, uls)}</div>{ko}</div></div>{float_cards(s.idx, ctx)}')
     note = "" if res else '<span class="pp-meta"> · 위 번역 칸에서 번역하면 문장마다 한국어가 붙어요</span>'
-    st.markdown(f'<div class="pp-panel"><div class="pp-reader-head"><div class="pp-reader-title">'
+    st.markdown(f'<div class="pp-panel pp-narrow"><div class="pp-reader-head"><div class="pp-reader-title">'
                 f'<span class="pp-lang">EN·KO</span>문장마다 한영 <span class="pp-meta">· {range_note(a)}</span>'
                 f'{note}</div></div><div class="pp-sents">{"".join(rows)}</div></div>', unsafe_allow_html=True)
 
@@ -2664,7 +2709,8 @@ def reading_page() -> None:
             translation_panel(a, rows_on=False, where="아래에서 영어 문장과 한 줄씩 나란히")
             side_panel(a)                  # 문장 짝마다 한 행: 영어·한국어 높이가 같이 늘어 끝까지 어긋나지 않는다
     elif mode == "pair":
-        translation_panel(a, rows_on=False, where="아래 원문 문장마다 바로 아래에")   # 번역하기 버튼을 문장 목록 위에
+        with st.container(key="ko_narrow"):   # 한 줄이 논문 본문 폭이 되게 가운데 좁은 칸
+            translation_panel(a, rows_on=False, where="아래 원문 문장마다 바로 아래에")   # 번역하기 버튼을 문장 목록 위에
         interleaved_panel(a)
     elif mode == "en":
         st.markdown(en_panel, unsafe_allow_html=True)      # 한 언어만 볼 때는 줄이 너무 길지 않게 가운데 좁은 폭
@@ -2672,7 +2718,7 @@ def reading_page() -> None:
         with st.container(key="ko_only"):
             translation_panel(a, floats_on=True)
     # 이전·다음(부분, 절 끝이면 절)은 본문 바로 끝에, 본문과 같은 폭(표·그림 안내는 그 아래)
-    narrow = mode in ("en", "ko") or (mode == "side" and current_translation(a) is None)   # 본문이 가운데 좁은 칸일 때
+    narrow = mode in ("en", "ko", "pair") or (mode == "side" and current_translation(a) is None)   # 본문이 가운데 좁은 칸일 때
     part_nav_buttons(parts, narrow=narrow)
     if ctx[0]:
         st.caption(f"이 글에 나온 표·그림 {len(ctx[0])}개({', '.join(t.label for t in ctx[0].values())})는 처음 언급한 "
