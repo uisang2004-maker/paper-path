@@ -518,7 +518,9 @@ def test_feedback9_range_rules_and_labels(at):
     at.session_state["translations"] = {key: TranslationResult(ko=ko, mode="aligned", ko_marks=[[] for _ in ko],
                                                                protected=[[]] * len(ko))}
     at.run()
-    assert any(b.key == "compare_btn" and b.label == "보호 없이 번역해 비교" for b in at.button)
+    assert not at.exception and "번역 0" in md_text(at)                 # 번역이 문장마다 붙는다
+    assert not any(b.key == "compare_btn" for b in at.button)            # '보호 없이 번역해 비교'(마스킹 끔)는 뺐다
+    assert "마스킹 끔" not in md_text(at)
 
 
 def test_position_card_text_is_not_faded(at):

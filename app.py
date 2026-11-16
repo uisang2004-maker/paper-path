@@ -250,7 +250,6 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-no { width:22px; height:22px; border-radius:6px; background:var(--wash); color:var(--pencil); display:grid; place-items:center; font-size:11px; font-weight:700; margin-top:1px; }
 .pp-text { color:var(--text); font-size:14px; line-height:1.7; letter-spacing:-.1px; }
 .pp-ko .pp-text { color:var(--text); font-size:14px; }
-.pp-off { color:var(--amber-ink); font-size:13px; margin-top:4px; }
 .pp-m { position:relative; padding:0 2px; border-radius:3px; font-weight:700; cursor:help; }
 .pp-m:focus { outline:2px solid var(--link); outline-offset:1px; }
 .pp-m.abbr { color:var(--link); background:var(--blue-soft); border-bottom:1px solid var(--c-blue); }
@@ -2038,17 +2037,14 @@ def quota_line() -> str | None:
             f"{Q.MAX_CHARS_PER_PAPER:,}자 · 저장된 번역을 다시 여는 것은 세지 않아요")
 
 
-def ko_html(res, i: int, a, off=None) -> str:
-    """i번째 문장의 한국어 번역(형광펜·밑줄 포함)과 마스킹 끔 비교 줄."""
+def ko_html(res, i: int, a) -> str:
+    """i번째 문장의 한국어 번역(형광펜·밑줄 포함)."""
     marks_ko, uls_ko = res.ko_marks or [], res.ko_underlines or []
-    extra = ""
-    if off and off.ko is not None and i < len(off.ko) and off.ko[i] != res.ko[i]:
-        extra = f'<div class="pp-off">마스킹 끔: {esc(off.ko[i])}</div>'
     body = render_ko(res.ko[i], marks_ko[i] if i < len(marks_ko) else [], a.active_rules,
                      as_wrappers(uls_ko[i]) if i < len(uls_ko) else None,
                      en_tips(a, i) if i < len(a.sentences) else None,
                      (cur_float_ctx(a)[:2], i))
-    return f'<div class="pp-text">{body}</div>{extra}'
+    return f'<div class="pp-text">{body}</div>'
 
 
 def hard_marks(a) -> list:
@@ -2508,14 +2504,13 @@ def side_panel(a) -> None:
     뒤쪽 문장이 어긋나므로 행 단위로 묶는다. 표·그림 카드는 그 문장 짝 아래에 한 번."""
     ss = st.session_state
     res = current_translation(a)
-    off = ss.translations.get((text_key(a.text), False))
     uls = card_underlines(a)
     ctx = cur_float_ctx(a)
     ko_head = ("한국어 번역" if res else
                ("번역을 껐어요" if not ss.show_translation else "위의 번역하기를 누르면 여기에 붙어요"))
     rows = [f'{sub_row(a, s.idx)}<div class="pp-side-row"><div class="pp-no">{s.idx + 1}</div>'
             f'<div class="pp-side-en">{en_html(a, s, uls)}</div>'
-            f'<div class="pp-side-ko">{ko_html(res, s.idx, a, off) if res and s.idx < len(res.ko) else ""}</div></div>'
+            f'<div class="pp-side-ko">{ko_html(res, s.idx, a) if res and s.idx < len(res.ko) else ""}</div></div>'
             f'{float_cards(s.idx, ctx)}' for s in shown(a)]
     st.markdown(f'<div class="pp-panel"><div class="pp-side-head"><div></div>'
                 f'<div class="pp-reader-title"><span class="pp-lang">EN</span>영어 원문 '
@@ -2529,12 +2524,11 @@ def interleaved_panel(a) -> None:
     """문장마다 한영: 영어 문장 바로 아래에 그 문장의 한국어 번역."""
     ss = st.session_state
     res = current_translation(a)
-    off = ss.translations.get((text_key(a.text), False))
     uls = card_underlines(a)
     rows = []
     ctx = cur_float_ctx(a)
     for s in shown(a):
-        ko = (f'<div class="pp-pair-ko"><span class="pp-lang">KO</span>{ko_html(res, s.idx, a, off)}</div>'
+        ko = (f'<div class="pp-pair-ko"><span class="pp-lang">KO</span>{ko_html(res, s.idx, a)}</div>'
               if res and s.idx < len(res.ko) else "")
         rows.append(f'{sub_row(a, s.idx)}<div class="pp-sent pp-pair"><div class="pp-no">{s.idx + 1}</div><div>'
                     f'<div class="pp-pair-en">{en_html(a, s, uls)}</div>{ko}</div></div>{float_cards(s.idx, ctx)}')
@@ -2592,10 +2586,9 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
         st.markdown(f'<div class="pp-meta">{note}{short}{" · 저장된 번역" if res.cached else ""} '
                     f'<span class="pp-info" title="{esc(T.ENGINE_LABEL[engine()[0]] + ". " + detail)}">ⓘ</span></div>',
                     unsafe_allow_html=True)
-        off = ss.translations.get((tkey, False))
         if res.ko is not None and rows_on:
             ctx = cur_float_ctx(a)
-            rows = [f'{sub_row(a, i)}<div class="pp-sent pp-ko"><div class="pp-no">{i + 1:02d}</div><div>{ko_html(res, i, a, off)}</div></div>'
+            rows = [f'{sub_row(a, i)}<div class="pp-sent pp-ko"><div class="pp-no">{i + 1:02d}</div><div>{ko_html(res, i, a)}</div></div>'
                     + (float_cards(i, ctx, ko=True) if floats_on else "") for i in range(len(res.ko)) if in_part(a, i)]
             st.markdown(f'<div class="pp-sents" style="padding:0">{"".join(rows)}</div>', unsafe_allow_html=True)
         elif res.ko is not None:
@@ -2603,21 +2596,6 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
         else:
             st.markdown(f'<div class="pp-text">{esc(res.paragraph or "")}</div>', unsafe_allow_html=True)
 
-        if off is None:
-            if st.button("보호 없이 번역해 비교", key="compare_btn",
-                         help="약어·인용·참조를 지키는 보호 표시(마스킹) 없이 한 번 더 번역해 차이를 보여 줘요(번역 API 추가 호출)"):
-                with st.spinner("마스킹 없이 번역하는 중…"):
-                    ss.translations[(tkey, False)] = run_translate(sents, a, False, file_cache)
-                st.rerun()
-        elif off.ko is None:
-            st.warning(off.error or "비교 번역을 만들지 못했어요.")
-        elif res.ko is not None:
-            toks = [(t, i) for i, ts in enumerate(res.protected) for t in ts]
-            lost_off = [t for t, i in toks if i < len(off.ko) and t not in off.ko[i]]
-            diff = sum(1 for x, y in zip(res.ko, off.ko) if x != y)
-            st.info(f"보호 토큰 {len(toks)}개 중 마스킹 끔에서 바뀐 것 {len(lost_off)}개"
-                    f"{(' (' + ', '.join(lost_off[:5]) + ')') if lost_off else ''} · 번역이 달라진 문장 {diff}개. "
-                    "차이가 작을 수 있어요(검증 결과 탭의 30편 실측 참고).")
         lim = usage.LIMITS[engine()[0]]
         line = quota_line()
         if line:
