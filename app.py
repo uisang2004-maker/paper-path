@@ -179,7 +179,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 섹션 머리 */
 .pp-sec { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:10px; }
 .pp-sec-title { display:flex; align-items:center; gap:9px; font-size:17px; font-weight:780; letter-spacing:-.3px; color:var(--ink); }
-.pp-sec-num { width:24px; height:24px; display:grid; place-items:center; border-radius:7px; background:#edf3f8; color:#54738d; font-size:11px; font-weight:800; }
+.pp-sec-num { width:24px; height:24px; display:grid; place-items:center; border-radius:7px; background:#edf3f8; color:#4c6378; font-size:11px; font-weight:800; }
 .pp-sec-note { color:#60758a; font-size:12px; }
 
 /* 3줄 뼈대 */
@@ -191,16 +191,16 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-kdot { width:8px; height:8px; border-radius:50%; background:#6c9dbb; }
 .teal .pp-kdot { background:#3a9c92; } .violet .pp-kdot { background:#8b79b5; }
 .pp-basis { color:#60758a; font-size:11.5px; white-space:nowrap; }
-.pp-basis.position { color:#9a681d; } .pp-basis.none { color:#8b98a9; }
+.pp-basis.position { color:#9a681d; } .pp-basis.none { color:#586b80; }
 .pp-card.est .pp-sk-text { color:#22364d; font-weight:560; }   /* 위치 추정 카드: 형광펜·밑줄이 없어 흐려 보이지 않게 */
 .pp-sk-text { font-size:14px; color:#40536a; line-height:1.65; letter-spacing:-.1px; }
-.pp-sk-no { color:#8090a1; font-size:11.5px; font-weight:750; margin-right:6px; }
-.pp-sk-missing { font-size:14px; color:#8b98a9; }
+.pp-sk-no { color:#586b80; font-size:11.5px; font-weight:750; margin-right:6px; }
+.pp-sk-missing { font-size:14px; color:#586b80; }
 .pp-sig-blue { background:#e7f1fb; color:#205d8b; font-weight:750; border-radius:4px; padding:1px 3px; }
 .pp-sig-teal { background:#e5f5f1; color:#18796f; font-weight:750; border-radius:4px; padding:1px 3px; }
 .pp-sig-violet { background:#f0ebf8; color:#7456a2; font-weight:750; border-radius:4px; padding:1px 3px; }
 .pp-sk-ko { margin-top:8px; padding-top:8px; border-top:1px dashed #e3e9f0; font-size:13.5px; color:#4a5e73; line-height:1.65; }
-.pp-u { text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color:#6c9dbb; }
+.pp-u { text-decoration-line: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color:#4f86ae; }
 .pp-u.method { text-decoration-color:#3a9c92; } .pp-u.result { text-decoration-color:#8b79b5; }
 .pp-u.def { text-decoration-style: dotted; text-decoration-thickness: 2px; text-decoration-color:#286b9c; }
 .pp-u .pp-u.def { text-decoration: none; color:#205f90; }   /* 핵심 내용 밑줄 안의 용어 설명은 글자색으로만 */
@@ -216,8 +216,9 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 
 /* 원문·번역 */
 .pp-reader-head { padding:12px 16px; border-bottom:1px solid #edf0f4; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-.pp-reader-title { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:780; color:var(--ink); }
-.pp-lang { background:#eff4f8; border-radius:5px; color:#60758b; padding:4px 7px; font-size:10.5px; font-weight:800; letter-spacing:.35px; }
+.pp-reader-title { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; font-size:14px; font-weight:780; color:var(--ink);
+  word-break:keep-all; }   /* 좁은 화면에서 '영어 원 / 문'처럼 낱말 중간에서 꺾이지 않게 */
+.pp-lang { background:#eff4f8; border-radius:5px; color:#4c6378; padding:4px 7px; font-size:10.5px; font-weight:800; letter-spacing:.35px; }
 .pp-meta { color:#4f6478; font-size:12px; }
 .pp-names-label { font-size:12.5px; font-weight:750; color:#2c4560; }
 .pp-names .pp-chips { justify-content:flex-start; }
@@ -226,21 +227,21 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-sents { padding:8px 16px 10px; }
 .pp-sent { display:grid; grid-template-columns:24px 1fr; gap:10px; padding:9px 0; border-bottom:1px solid #f0f3f6; }
 .pp-sent:last-child { border-bottom:0; }
-.pp-no { width:22px; height:22px; border-radius:6px; background:#f1f5f8; color:#8090a1; display:grid; place-items:center; font-size:11px; font-weight:750; margin-top:1px; }
+.pp-no { width:22px; height:22px; border-radius:6px; background:#f1f5f8; color:#586b80; display:grid; place-items:center; font-size:11px; font-weight:750; margin-top:1px; }
 .pp-text { color:#34485f; font-size:14.5px; line-height:1.7; letter-spacing:-.1px; }
 .pp-ko .pp-text { color:#4a5e73; font-size:14px; }
 .pp-off { color:#9a681d; font-size:12.5px; margin-top:4px; }
 .pp-m { position:relative; padding:0 2px; border-radius:3px; font-weight:700; cursor:help; }
 .pp-m:focus { outline:2px solid #5c9ac0; outline-offset:1px; }
-.pp-m.abbr { color:#205f90; background:#eaf3fb; border-bottom:1px solid #7ca9ca; }
+.pp-m.abbr { color:#205f90; background:#eaf3fb; border-bottom:1px solid #4f86ae; }
 .pp-m.abbr-missing { color:#52677f; background:#f1f4f7; border-bottom:1px dashed #9aa8b6; }
 .pp-m.hedge { color:#956314; background:#fff4dd; border-bottom:1px solid #d7ac57; }
 .pp-m.confident { color:#1c756d; background:#e8f5f1; }
 .pp-m.reference { color:#73539d; background:#f0ebf8; }
 /* 색은 늘리지 않는다: 용어 설명은 약어와 같은 파랑, 수치 근거는 확신과 같은 청록, 반복 용어는 파랑 얇은 밑줄 */
-.pp-m.definition { color:#205f90; background:#eaf3fb; border-bottom:1px solid #7ca9ca; }
+.pp-m.definition { color:#205f90; background:#eaf3fb; border-bottom:1px solid #4f86ae; }
 .pp-m.number { color:#1c756d; background:#e8f5f1; }
-.pp-m.term { color:inherit; font-weight:650; background:transparent; padding:0; border-bottom:1.5px solid #7ca9ca; border-radius:0; }
+.pp-m.term { color:inherit; font-weight:650; background:transparent; padding:0; border-bottom:1.5px solid #4f86ae; border-radius:0; }
 /* 설명창은 단어 위쪽에 띄운다: 아래에 띄우면 곧 읽을 다음 줄을 가린다(카드 안은 위가 잘리므로 아래) */
 .pp-m:hover::after, .pp-m:focus::after { content: attr(data-tip); position:absolute; left:0; bottom:calc(100% + 6px); z-index:20;
   background:#17293f; color:#fff; font-size:12px; font-weight:500; line-height:1.45; padding:7px 9px; border-radius:7px;
@@ -266,7 +267,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-flow-step.blue { border-top-color:#6c9dbb; } .pp-flow-step.teal { border-top-color:#3a9c92; }
 .pp-flow-step.violet { border-top-color:#8b79b5; }
 .pp-flow-head { display:flex; align-items:center; gap:5px; font-size:13px; color:#2c4560; margin-bottom:6px; }
-.pp-flow-no { font-size:10.5px; font-weight:750; color:#60758a; background:#f1f5f8; border-radius:5px; padding:1px 5px; }
+.pp-flow-no { font-size:10.5px; font-weight:750; color:#4c6378; background:#f1f5f8; border-radius:5px; padding:1px 5px; }
 .pp-flow-text { font-size:13px; color:#34485f; line-height:1.55; }
 .pp-flow-ko { font-size:12px; color:#5c7084; margin-top:5px; line-height:1.5; }
 .pp-flow-arrow { align-self:center; color:#9aa8b6; font-size:18px; font-weight:700; }
@@ -313,7 +314,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .st-key-part_nav_narrow { max-width:960px; margin-left:auto !important; margin-right:auto !important; }
 .st-key-part_nav button, .st-key-part_nav_narrow button { min-height:36px !important; }
 .st-key-part_bar, .st-key-paper_nav { scroll-margin-top:72px; }   /* 위에 붙은 막대에 가리지 않게 */
-.pp-nav-label { font-size:12px; font-weight:750; color:#2c4560; margin:6px 0 3px; }
+.pp-nav-label { font-size:12px; font-weight:750; color:#2c4560; margin:10px 0 6px; }   /* 아래 버튼에 붙지 않게 */
 .pp-sk-more summary { list-style:none; cursor:pointer; }
 .pp-sk-more summary::-webkit-details-marker { display:none; }
 .pp-sk-more .pp-sk-text { display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
@@ -408,7 +409,7 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .st-key-loaded_bar { background:var(--surface); border:1px solid var(--line); border-left:3px solid #4f86ad;
   border-radius:12px; padding:8px 14px; box-shadow:var(--shadow); }
 .pp-loaded { font-size:13.5px; color:#2c4560; }
-.pp-loaded-label { font-size:11.5px; font-weight:750; color:#60758a; background:#eef3f8; border-radius:6px;
+.pp-loaded-label { font-size:11.5px; font-weight:750; color:#4c6378; background:#eef3f8; border-radius:6px;
   padding:2px 7px; margin-right:8px; }
 
 /* PDF 끌어다 놓기 칸 */
@@ -443,6 +444,48 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   .pp-steps { grid-template-columns:repeat(2,1fr); }
   .pp-privacy { border-left:0; padding-left:0; }
   .pp-h1 { font-size:23px; }
+}
+
+/* 한영 나란히·번역 전: 번역 칸을 아래 영어 칸과 같은 폭으로 */
+.st-key-ko_narrow { max-width:960px; width:100%; margin-left:auto !important; margin-right:auto !important; }
+/* 위에 붙은 막대: 자료 이름은 한 줄(넘치면 …), '03 자료로' 링크는 누르기 쉽게 */
+.pp-loaded { display:flex; align-items:center; min-width:0; }
+.pp-loaded-label { flex:none; }
+.pp-loaded-src { min-width:0; }
+.pp-jump { flex:none; padding:6px 4px; }
+/* 형광펜 칩의 주황 점: 칩 바탕과 3:1 이상 */
+.st-key-mark_pills .stMarkdownColoredText[style*="226, 102, 12"] { color:#b45309 !important; }
+/* 끌어다 놓기 칸: 안쪽 흰 상자를 없애 점선 칸 하나로, 놓는 자리는 점선 칸 전체, 버튼은 가운데 */
+.st-key-pdf_drop { position:relative; padding-bottom:62px; }
+.st-key-pdf_drop [data-testid="stElementContainer"]:has([data-testid="stFileUploader"]) { position:static; }   /* 놓는 자리가 점선 칸 기준이 되게 */
+.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] { position:absolute; inset:0; min-height:0; background:transparent;
+  border:0; border-radius:12px; display:flex; justify-content:center; align-items:flex-end; padding:0 0 14px; }
+.st-key-pdf_drop [data-testid="stFileUploaderDropzoneInstructions"] { display:none; }   /* 영어 기본 안내(위에 한국어 안내가 있다) */
+.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button { background:#fff !important; min-height:40px; padding:0 16px !important; }
+.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button p { font-size:0; }
+.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button p::after { content:"PDF 파일 고르기"; font-size:14px; }
+/* '예시 문단으로 보기': 글자가 아니라 누르는 버튼으로 보이게 */
+.st-key-demo_btn button { border:1px solid #cfe0f1 !important; background:#f3f8fd !important; border-radius:9px !important;
+  padding:6px 14px !important; min-height:38px; color:#1b456d !important; }
+.st-key-demo_btn button:hover { background:#e6f0fa !important; }
+.st-key-demo_btn button p { font-weight:700; }
+
+@media (max-width: 640px) {
+  /* 위에 붙은 막대가 화면을 가리지 않게: 자료 이름 한 줄 + 아이콘 버튼 네 개를 한 줄로 */
+  .st-key-loaded_bar { padding:6px 10px; }
+  .st-key-loaded_bar [data-testid="stHorizontalBlock"] { flex-direction:row !important; flex-wrap:wrap !important; gap:6px !important; }
+  .st-key-loaded_bar [data-testid="stColumn"] { flex:1 1 0 !important; min-width:0 !important; width:auto !important; }
+  .st-key-loaded_bar [data-testid="stColumn"]:first-child { flex:1 1 100% !important; }
+  .st-key-loaded_bar button { position:relative; min-height:40px; padding:0 4px !important; }
+  .st-key-loaded_bar button [data-testid="stMarkdownContainer"] { position:absolute; width:1px; height:1px; overflow:hidden;
+    clip:rect(0 0 0 0); white-space:nowrap; }   /* 글자는 화면에서만 숨기고 화면 읽기 프로그램에는 남긴다 */
+  .st-key-loaded_bar [data-testid="stMarkdown"], .st-key-loaded_bar [data-testid="stMarkdownContainer"] {
+    margin-bottom:0 !important; }   /* 기본 음수 아래 여백이 버튼 줄을 글자 위로 끌어올리지 않게 */
+  .pp-loaded { font-size:12.5px; }
+  .pp-loaded-src { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }   /* 휴대폰에서만 한 줄(넘치면 …) */
+  .pp-jump { padding:8px 4px; }
+  /* 손가락으로 누르는 버튼은 40px 이상 */
+  [data-testid="stButtonGroup"] button { min-height:40px !important; }
 }
 </style>
 """
@@ -557,7 +600,8 @@ def loaded_bar(a) -> None:
         c5.button("사용법", key="tut_open", icon=":material/help:", on_click=open_tutorial, use_container_width=True,
                   help="화면을 하나씩 짚어 가며 기능을 알려 줘요")   # 스크롤해도 늘 보이게 위 막대에
         c1.markdown(f'<div class="pp-loaded"><span class="pp-loaded-label">지금 읽는 자료</span>'
-                    f'{esc(source_flag())}<a class="pp-jump" href="#pp-03">03 자료로 ↓</a></div>', unsafe_allow_html=True)
+                    f'<span class="pp-loaded-src">{esc(source_flag())}</span>'
+                    f'<a class="pp-jump" href="#pp-03">03 자료로 ↓</a></div>', unsafe_allow_html=True)
         ss = st.session_state
         items = SV.pack_items(ss.translations, ss.ai_gloss)
         c3.download_button("결과 파일 내려받기", SV.to_file(items, ss.source.get("title", ""), ss.browser_docs),
@@ -1419,7 +1463,7 @@ def paper_overview(paper) -> None:
     ss = st.session_state
     titles = [s.title for s in paper.sections]
     pages = paper_pages(paper)
-    st.markdown(sec_head("00", "논문 쪽 고르기", f"{paper.title[:70]} · {len(titles)}개 절 · 약 {paper.chars:,}자"),
+    st.markdown(sec_head("00", "논문 쪽 고르기", f"{clip(paper.title, 70)} · {len(titles)}개 절 · 약 {paper.chars:,}자"),
                 unsafe_allow_html=True)
     if paper.notes:
         st.caption(" ".join(paper.notes))
@@ -1521,6 +1565,15 @@ def topbar() -> None:
                       help="Google 계정으로 로그인하면(선택) 번역 결과가 내 계정에 저장돼 다른 PC에서도 이어 볼 수 있어요")
 
 
+def clip(s: str, n: int) -> str:
+    """n자보다 길면 단어 경계에서 자르고 '…'를 붙인다(단어 중간에서 끊겨 오타처럼 보이지 않게)."""
+    s = (s or "").strip()
+    if len(s) <= n:
+        return s
+    cut = s[:n].rsplit(" ", 1)[0] if " " in s[:n] else s[:n]
+    return cut.rstrip(" ,:;·-") + "…"
+
+
 def source_flag() -> str:
     src = st.session_state.source
     if src["kind"] == "none":
@@ -1528,9 +1581,9 @@ def source_flag() -> str:
     if src["kind"] == "demo":
         return "화면 예시 데이터 · 직접 작성, 실제 논문 아님"
     if src["kind"] == "arxiv":
-        return f"arXiv {src['id']} · {src.get('title', '')[:40]} · 메타데이터 CC0"
+        return f"arXiv {src['id']} · {clip(src.get('title', ''), 40)} · 메타데이터 CC0"
     if src["kind"] == "pdf":
-        return f"PDF · {src.get('title', '')[:36]} · {src.get('section', '')} · 서버에 저장하지 않음"
+        return f"PDF · {clip(src.get('title', ''), 36)} · {src.get('section', '')} · 서버에 저장하지 않음"
     return "붙여 넣은 텍스트 · 앱에 저장하지 않음"
 
 
@@ -1551,7 +1604,7 @@ def input_panel() -> None:
         clicked = False
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
-                st.markdown('<div class="pp-drop-kicker">논문 번역을 시작해 보세요</div>'
+                st.markdown('<div class="pp-drop-kicker">논문을 넣으면 읽는 길이 시작돼요</div>'
                             '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으세요</div>'
                             f'<div class="pp-drop-hint">PDF 업로드 · arXiv ID · 텍스트 입력 · 놓으면 바로 절별로 나눠 분석해요 · '
                             f'{MAX_PDF_MB}MB 이하, 글자를 선택할 수 있는 PDF</div>', unsafe_allow_html=True)
@@ -1568,7 +1621,7 @@ def input_panel() -> None:
                          placeholder="영어 논문 초록이나 단락을 붙여 넣으세요. PDF 복사 잔재(줄바꿈·쪽번호·머리말)는 자동으로 정리해요.")
             clicked = st.button("분석하기", type="primary", key="load_btn")
         b1, b2 = st.columns([1, 1])
-        b1.button("예시 문단으로 보기", key="demo_btn", type="tertiary", on_click=load_demo)
+        b1.button("예시 문단으로 보기", key="demo_btn", type="tertiary", icon=":material/article:", on_click=load_demo)
         if ss.input_text:                  # 다시 넣다가 그만두면 보던 결과로 돌아간다
             b2.button("← 보던 결과로 돌아가기", key="back_btn", type="tertiary", on_click=set_show_input, args=(False,))
         saved_panel()
@@ -2510,10 +2563,12 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
 
 def hero() -> None:
     """첫 화면 히어로: 왼쪽 소개 문구, 오른쪽은 배경 이미지(static/hero.jpg, 이의상 님이 만든 이미지)."""
-    st.markdown('<div class="pp-hero"><div class="pp-hero-text"><div class="pp-eyebrow">ACADEMIC READING WORKSPACE</div>'
+    # 앱의 중심은 정규식 분석이고 번역은 참고용이라, 소개 문구도 그 순서로(영문 대문자 머리표는 두지 않는다)
+    st.markdown('<div class="pp-hero"><div class="pp-hero-text">'
                 '<h1 class="pp-hero-h1">논문을 읽는 길을<br>더 쉽게 만들어 드려요.</h1>'
-                '<div class="pp-hero-desc">영어 논문을 한국어로 이해하고, 핵심 내용을 빠르게 파악하세요.</div>'
-                '<div class="pp-hero-badges"><span class="pp-hero-badge">AI-Powered Translation</span>'
+                '<div class="pp-hero-desc">처음 읽는 영어 논문에서 문제·방법·결과 문장을 정규식으로 먼저 찾아 줘요. '
+                '번역은 참고용이에요.</div>'
+                '<div class="pp-hero-badges"><span class="pp-hero-badge">정규식으로 찾는 읽는 길</span>'
                 '<span class="pp-hero-badge soft">3줄 뼈대 · 형광펜 · 어려운 단어표</span></div>'
                 '</div></div>', unsafe_allow_html=True)
 
@@ -2601,10 +2656,12 @@ def reading_page() -> None:
                 f'<div class="pp-meta">표현에 마우스를 올리거나 Tab으로 이동하면 정의와 규칙이 보여요</div></div>'
                 f'<div class="pp-sents">{rows or "<div class=pp-meta>문장이 없어요.</div>"}</div></div>')
     if mode == "side":
-        translation_panel(a, rows_on=False, where="아래에서 영어 문장과 한 줄씩 나란히")
         if current_translation(a) is None:     # 번역 전에는 오른쪽 칸이 통째로 비므로 영어 원문만 한 칸으로
+            with st.container(key="ko_narrow"):   # 번역 칸도 아래 영어 칸과 같은 가운데 960px(왼쪽 끝을 맞춘다)
+                translation_panel(a, rows_on=False, where="아래에서 영어 문장과 한 줄씩 나란히")
             st.markdown(en_panel, unsafe_allow_html=True)
         else:
+            translation_panel(a, rows_on=False, where="아래에서 영어 문장과 한 줄씩 나란히")
             side_panel(a)                  # 문장 짝마다 한 행: 영어·한국어 높이가 같이 늘어 끝까지 어긋나지 않는다
     elif mode == "pair":
         translation_panel(a, rows_on=False, where="아래 원문 문장마다 바로 아래에")   # 번역하기 버튼을 문장 목록 위에
