@@ -149,19 +149,31 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   background:linear-gradient(90deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.88) 34%, rgba(234,243,252,.25) 62%, rgba(234,243,252,0) 100%); }
 .pp-hero-text { position:relative; z-index:1; max-width:560px; padding:44px 40px 40px; }
 .pp-hero .pp-eyebrow { color:var(--link); }
-.pp-hero-h1 { margin:0; font-size:36px; line-height:1.22; letter-spacing:-1.4px; font-weight:700; color:var(--ink);
+.stApp .pp-hero-h1 { margin:0; font-size:36px; line-height:1.22; letter-spacing:-1.4px; font-weight:700; color:var(--ink);
   word-break:keep-all; }
 .pp-hero-desc { font-size:16px; color:var(--text); margin-top:14px; line-height:1.6; }
-.pp-hero-badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
-.pp-hero-badge { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:999px; font-size:13px;
-  font-weight:700; color:#fff; background:var(--action); }
-.pp-hero-badge.soft { color:var(--ink); background:rgba(255,255,255,.85); border:1px solid var(--rule); box-shadow:none; }
+/* 히어로의 견본 문장: 읽기 화면과 같은 종이·세리프·형광펜(이 앱이 해 주는 일을 한 줄로 보여 준다) */
+.pp-hero-sample { margin:22px 0 0; padding:14px 18px 12px; background:var(--paper); border:1px solid var(--rule);
+  border-radius:6px; max-width:520px; }
+.pp-hero-sample p { margin:0; font-size:18px; line-height:1.7; color:var(--paper-ink); }
+.stApp .pp-hero-sample p, .stApp .pp-hero-sample p * { font-family:var(--serif); }
+.pp-hero-sample figcaption { margin-top:8px; font-size:12px; color:var(--pencil); line-height:1.5; word-break:keep-all; }
 @media (max-width: 900px) {
   .pp-hero { min-height:0; background-position:78% center; }
   .pp-hero::before { background:linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.86) 100%); }
   .pp-hero-text { padding:26px 20px 24px; }
-  .pp-hero-h1 { font-size:24px; letter-spacing:-.8px; }
+  .stApp .pp-hero-h1 { font-size:24px; letter-spacing:-.8px; }
   .pp-hero-desc { font-size:14px; word-break:keep-all; }
+  .pp-hero-sample { margin-top:16px; padding:10px 14px; }
+  .pp-hero-sample p { font-size:16px; line-height:1.6; }
+}
+@media (max-width: 640px) {
+  /* 휴대폰 첫 화면에 자료 넣기 칸이 보이게: 머리말의 부제·빈 상태 칸을 접고 히어로 여백을 줄인다 */
+  .pp-sub { display:none; }
+  .st-key-topbar [data-testid="stColumn"]:has(.pp-status [role="status"]:empty) { display:none; }
+  .st-key-topbar { padding:6px 0; }
+  .pp-hero-text { padding:20px 16px 18px; }
+  .pp-hero-desc { margin-top:10px; }
 }
 
 /* 소개 */
@@ -467,8 +479,9 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 끌어다 놓기 칸: 안쪽 흰 상자를 없애 점선 칸 하나로, 놓는 자리는 점선 칸 전체, 버튼은 가운데 */
 .st-key-pdf_drop { position:relative; padding-bottom:62px; }
 .st-key-pdf_drop [data-testid="stElementContainer"]:has([data-testid="stFileUploader"]) { position:static; }   /* 놓는 자리가 점선 칸 기준이 되게 */
-.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] { position:absolute; inset:0; min-height:0; background:transparent;
-  border:0; border-radius:12px; display:flex; justify-content:center; align-items:flex-end; padding:0 0 14px; }
+.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] { position:absolute; inset:0; width:auto !important; height:auto !important; min-height:0; background:transparent;
+  border:0; border-radius:12px; display:flex !important; flex-direction:row !important; justify-content:center !important; align-items:flex-end !important;
+  padding:0 0 14px !important; }   /* 휴대폰에서 Streamlit 기본 배치(세로·위쪽)가 덮지 않게 */
 .st-key-pdf_drop [data-testid="stFileUploaderDropzoneInstructions"] { display:none; }   /* 영어 기본 안내(위에 한국어 안내가 있다) */
 .st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button { background:#fff !important; min-height:40px; padding:0 16px !important; }
 .st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button p { font-size:0; }
@@ -2622,8 +2635,14 @@ def hero() -> None:
                 '<h1 class="pp-hero-h1">논문을 읽는 길을<br>더 쉽게 만들어 드려요.</h1>'
                 '<div class="pp-hero-desc">처음 읽는 영어 논문에서 문제·방법·결과 문장을 정규식으로 먼저 찾아 줘요. '
                 '번역은 참고용이에요.</div>'
-                '<div class="pp-hero-badges"><span class="pp-hero-badge">정규식으로 찾는 읽는 길</span>'
-                '<span class="pp-hero-badge soft">3줄 뼈대 · 형광펜 · 어려운 단어표</span></div>'
+                # 배지 대신 실제 읽기 화면과 같은 형광펜을 칠한 문장 한 줄(예시 문단의 마지막 문장): 무엇을 해 주는지 바로 보이게
+                '<figure class="pp-hero-sample"><p>These findings suggest that a '
+                '<span class="pp-m term" data-tip="반복 용어: 글에서 여러 번 나오는 핵심 용어">compact reranker</span> '
+                '<span class="pp-m hedge" data-tip="추측·가능성: may — 저자가 단정하지 않는 표현">may</span> help smaller models '
+                'use evidence more consistently '
+                '<span class="pp-m reference" data-tip="참조: [4] — 다른 연구를 가리키는 번호">[4]</span>.</p>'
+                '<figcaption>정규식이 칠한 표시예요. 노란색은 추측 표현, 보라색은 참조 번호, 밑줄은 반복 용어예요.'
+                '</figcaption></figure>'
                 '</div></div>', unsafe_allow_html=True)
 
 
