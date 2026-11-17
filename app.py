@@ -602,6 +602,20 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-progress { height:3px; background:var(--rule-soft); border-radius:2px; overflow:hidden; margin-top:2px; }
 .pp-progress span { display:block; height:100%; background:var(--c-blue); border-radius:2px; }
 .st-key-loaded_bar [data-testid="stMarkdown"]:has(.pp-progress) { margin-bottom:0 !important; }
+/* 표·그림 '크게 보기': 누르면 화면 전체를 덮는 어두운 창에 원본 해상도로(넘치면 스크롤), 오른쪽 위 '✕ 닫기' */
+.pp-zoom { margin-top:6px; }
+.pp-zoom > summary { list-style:none; display:inline-block; cursor:zoom-in; font-size:13px; font-weight:600; color:var(--link);
+  padding:6px 12px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); }
+.pp-zoom > summary::-webkit-details-marker { display:none; }
+.pp-zoom .pp-zoom-close, .pp-zoom[open] .pp-zoom-open { display:none; }
+.pp-zoom[open] .pp-zoom-close { display:inline; }
+.pp-zoom[open] > summary { position:fixed; top:16px; right:24px; z-index:1002; cursor:pointer; color:#fff;
+  background:var(--ink); border-color:var(--ink); }
+.pp-zoom-view { position:fixed; inset:0; z-index:1001; background:rgba(20,30,42,.9); overflow:auto; padding:64px 24px 32px; }
+.pp-zoom-cap { color:#fff; font-size:14px; line-height:1.5; max-width:900px; margin:0 auto 12px; }
+.pp-zoom-img { display:block; margin:0 auto; background-color:#fff; border-radius:4px; }
+@media (prefers-reduced-motion: no-preference) { .pp-zoom[open] .pp-zoom-view { animation:pp-zoom-in .15s ease-out; } }
+@keyframes pp-zoom-in { from { opacity:0; } to { opacity:1; } }
 </style>
 """
 
@@ -2163,7 +2177,7 @@ def table_card(t, prefix: str) -> None:
     where = "쪽 전체(영역을 찾지 못함)" if t.whole_page else ("표 영역" if t.kind == "table" else "그림 영역")
     st.markdown(f'<div class="pp-table-cap"><b>{esc(t.label)}</b> <span class="pp-meta">· {t.page}쪽 · {where}</span><br>'
                 f'{esc(t.caption)}</div>', unsafe_allow_html=True)
-    st.image(t.png, width=min(t.width or 900, 900))    # 좁은 표를 억지로 늘리지 않는다
+    st.image(t.png, width=min(t.view_width, 900))    # 고해상도 이미지를 인쇄 크기의 1.5배로(오른쪽 위 버튼으로 전체 화면)
     if t.grid:
         with st.expander(f"Table {t.num} 표로 보기(자동 인식, 원본 이미지와 비교해 주세요)"):
             import pandas as pd
@@ -2201,15 +2215,27 @@ def float_style(floats: dict) -> str:
     return f"<style>{rules}</style>" if rules else ""
 
 
-def float_box(key, t, cls: str, max_w: int, max_h: int | None = None, fixed: bool = False) -> str:
+def float_box(key, t, cls: str, max_w: int, max_h: int | None = None, fixed: bool = False, native: bool = False) -> str:
     """이미지 자리(배경 이미지 + 원래 가로세로 비율). max_h를 주면 그 높이에 맞춰 줄인 미리보기.
     fixed면 너비를 픽셀로 고정한다(마우스 미리보기 상자는 내용 너비를 따르므로 %를 쓰면 0이 된다)."""
-    w = t.width or 600
+    # 고해상도 이미지는 인쇄 크기의 1.5배로 줄여 보인다. native면 이미지 픽셀 그대로(크게 보기)
+    w = (t.width or 600) if native else t.view_width
     if max_h and t.height:
         w = min(w, int(max_h * t.width / t.height))
     ratio = f"{t.width or 4} / {t.height or 3}"
     return (f'<span class="pp-flt pp-flt-{key[0]}-{key[1]} {cls}" role="img" aria-label="{esc(t.label)}" '
             f'style="aspect-ratio:{ratio}; width:{f"{min(w, max_w)}px" if fixed else f"min(100%, {min(w, max_w)}px)"}"></span>')
+
+
+def zoom_box(key, t, label: str) -> str:
+    """'크게 보기': 누르면 화면 전체를 덮는 창에 원본 해상도로(넘치면 스크롤), 다시 누르면(✕ 닫기) 닫힌다.
+    Streamlit 버튼은 글 상자 안에 둘 수 없어 HTML details만으로 만든다(스크립트 없이, 키보드 Enter로도 열고 닫힘)."""
+    return (f'<details class="pp-zoom"><summary><span class="pp-zoom-open">크게 보기</span>'
+            f'<span class="pp-zoom-close">✕ 닫기</span></summary>'
+            f'<div class="pp-zoom-view" role="dialog" aria-label="{esc(label)} 크게 보기">'
+            f'<div class="pp-zoom-cap">{esc(t.caption)}</div>'
+            f'{float_box(key, t, "pp-zoom-img", t.width or 1200, fixed=True, native=True)}'
+            f'</div></details>')
 
 
 def float_cards(i: int, ctx, ko: bool = False) -> str:
@@ -2230,7 +2256,8 @@ def float_cards(i: int, ctx, ko: bool = False) -> str:
         out.append(f'<div class="pp-float"><details><summary><div class="pp-float-head">{icon} <b>{esc(label)}</b>'
                    f' <span class="pp-meta">· {t.page}쪽{where} · 펼치기</span>'
                    f' <span class="pp-float-short">{esc(short)}</span></div></summary>'
-                   f'<div class="pp-float-cap">{esc(cap)}</div>{float_box(key, t, "pp-full", 900)}</details></div>')
+                   f'<div class="pp-float-cap">{esc(cap)}</div>{float_box(key, t, "pp-full", 900)}'
+                   f'{zoom_box(key, t, label)}</details></div>')
     return "".join(out)
 
 
@@ -2254,6 +2281,7 @@ def float_pop(phrase: str, sent_idx: int | None, ctx) -> tuple[str, str]:
 
 LONG_SENTS = 40                       # 문장이 이보다 많은 글은 나눠 읽는다
 PART_SENTS = 30                       # 소제목 위치를 모를 때 한 부분의 문장 수
+PART_MIN = 8                          # 소제목으로 나눈 부분이 이보다 짧으면 다음 부분과 합친다
 CATALOG_HTML = re.compile(r"\((?:[^()]*?,\s*)?cat\.\s*no\.[^()]*\)")   # 렌더된 HTML 안 품번 괄호
 
 
@@ -2360,6 +2388,29 @@ def protocol_cards(a) -> None:
                      f'표시된 요점을 보여 줘요.</span></div></div>', unsafe_allow_html=True)
 
 
+NUMBERED_SUB = re.compile(r"^\d+(?:\.\d+)+\.?\s")   # '2.1 Binary-Framed …'처럼 번호 붙은 소제목
+
+
+def merge_short_parts(parts: list[tuple[str, int, int]]) -> list[tuple[str, int, int]]:
+    """PART_MIN문장보다 짧은 부분은 다음 부분과 합친다(마지막이 짧으면 앞과). 2문장짜리 머리말·4문장짜리 소절이
+    따로 한 화면을 차지하면 넘기기만 잦다. 이름은 첫 소제목(머리말 '처음'은 건너뜀) + 합친 수."""
+    groups: list[list[tuple[str, int, int]]] = []
+    for p in parts:
+        if groups and sum(hi - lo for _, lo, hi in groups[-1]) < PART_MIN:
+            groups[-1].append(p)
+        else:
+            groups.append([p])
+    if len(groups) > 1 and sum(hi - lo for _, lo, hi in groups[-1]) < PART_MIN:
+        last = groups.pop()                # 먼저 꺼낸 뒤 붙인다(groups[-2] += groups.pop()은 꺼내기 전 자리를 가리켜 틀린다)
+        groups[-1] += last
+    out = []
+    for g in groups:
+        names = [name for name, _, _ in g if name != "처음"] or ["처음"]
+        label = names[0] + (f" 외 {len(names) - 1}" if len(names) > 1 else "")
+        out.append((label, g[0][1], g[-1][2]))
+    return out
+
+
 def reading_parts(a) -> list[tuple[str, int, int]]:
     """긴 글을 나눠 읽을 부분 [(이름, 시작 문장, 끝 문장(제외))]. 소제목 위치를 알면 소제목마다, 모르면 30문장씩.
     짧은 글이나 나눌 곳이 없으면 []."""
@@ -2373,10 +2424,13 @@ def reading_parts(a) -> list[tuple[str, int, int]]:
             i = next((s.idx for s in a.sentences if s.end > at), None) if at >= 0 else None
             if i is not None:
                 starts.setdefault(i, name)
+    # 번호 붙은 소제목(2.1, 3.2 …)이 있으면 그것만 부분을 나눈다. 번호 없는 작은 제목(Training, Error score)은 본문 안 소제목 줄로만
+    if any(NUMBERED_SUB.match(name) for name in starts.values()):
+        starts = {i: name for i, name in starts.items() if NUMBERED_SUB.match(name)}
     if len(starts) >= 2 or (starts and 0 not in starts):
         starts.setdefault(0, "처음")
         idx = sorted(starts)
-        parts = [(starts[i], i, idx[k + 1] if k + 1 < len(idx) else n) for k, i in enumerate(idx)]
+        parts = merge_short_parts([(starts[i], i, idx[k + 1] if k + 1 < len(idx) else n) for k, i in enumerate(idx)])
     else:
         parts = [(f"문장 {i + 1}–{min(i + PART_SENTS, n)}", i, min(i + PART_SENTS, n)) for i in range(0, n, PART_SENTS)]
     return parts if len(parts) > 1 else []

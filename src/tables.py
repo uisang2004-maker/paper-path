@@ -21,7 +21,9 @@ NEAR_CAPTION = 40.0       # 캡션과 표 가장자리(첫 가로선) 사이 최
 MAX_RULE_GAP = 220.0      # 같은 표로 묶을 가로선 사이 최대 거리(pt). 사이에 본문 크기 긴 문장·다른 캡션이 있으면 끊는다
 MIN_RULE_WIDTH = 40.0     # 이보다 짧은 가로선은 표 선으로 보지 않는다(밑줄·기호)
 PAD = 4.0
-RESOLUTION = 150          # 잘라 낸 이미지 해상도(dpi)
+RESOLUTION = 220          # 잘라 낸 표 이미지 해상도(dpi). 화면에는 VIEW_DPI 기준 크기로 보여 고해상도 화면에서도 선명하다
+PAGE_RESOLUTION = 130     # 영역을 못 찾아 쪽 전체를 보여 줄 때
+VIEW_DPI = 144            # 화면 표시 크기: 인쇄 크기(96dpi 기준)의 1.5배. 이미지 픽셀이 이보다 많아 선명하게 줄여 보인다
 MAX_TABLES = 30
 
 
@@ -37,6 +39,12 @@ class TableInfo:
     width: int = 0                              # 이미지 픽셀 크기(화면에서 비율 맞추기)
     height: int = 0
     mime: str = "image/png"
+    dpi: int = RESOLUTION                       # 이미지를 만든 해상도(화면 표시 크기 계산)
+
+    @property
+    def view_width(self) -> int:
+        """화면에 보여 줄 기본 너비(px): 인쇄 크기의 1.5배. 이미지는 이보다 픽셀이 많아 줄여 보이므로 흐리지 않다."""
+        return round((self.width or 600) * VIEW_DPI / (self.dpi or RESOLUTION))
 
     @property
     def label(self) -> str:
@@ -203,9 +211,11 @@ def find_tables(data: bytes) -> list[TableInfo]:
             page = pdf.pages[pn]
             if box:
                 region = page.crop(box)
-                info = _info(num, caption, pn, region.to_image(resolution=RESOLUTION).original, grid=_grid(region))
+                info = _info(num, caption, pn, region.to_image(resolution=RESOLUTION).original, grid=_grid(region),
+                             dpi=RESOLUTION)
             else:
-                info = _info(num, caption, pn, page.to_image(resolution=90).original, whole_page=True)
+                info = _info(num, caption, pn, page.to_image(resolution=PAGE_RESOLUTION).original, whole_page=True,
+                             dpi=PAGE_RESOLUTION)
             out.append(info)
             page.flush_cache()
     return out
@@ -236,7 +246,8 @@ def first_mentions(text: str, sentences) -> dict[tuple[str, int], int]:
 
 # ---------------------------------------------------------------- 그림(Figure)
 
-FIG_RESOLUTION = 110
+FIG_RESOLUTION = 200      # 그림 해상도(dpi): 110이면 막대그래프 숫자가 뭉개졌다
+FIG_PAGE_RESOLUTION = 120
 MIN_FIG_HEIGHT = 30.0
 
 
@@ -299,9 +310,9 @@ def find_figures(data: bytes) -> list[TableInfo]:
             page = pdf.pages[pn]
             if box:
                 img = page.crop(box).to_image(resolution=FIG_RESOLUTION).original
-                out.append(_info(num, caption, pn, img, kind="figure"))
+                out.append(_info(num, caption, pn, img, kind="figure", dpi=FIG_RESOLUTION))
             else:
-                out.append(_info(num, caption, pn, page.to_image(resolution=80).original, kind="figure",
+                out.append(_info(num, caption, pn, page.to_image(resolution=FIG_PAGE_RESOLUTION).original, kind="figure", dpi=FIG_PAGE_RESOLUTION,
                                  whole_page=True))
             page.flush_cache()
     return out

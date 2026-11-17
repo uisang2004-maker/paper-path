@@ -499,16 +499,26 @@ def test_mark_tooltip_has_no_duplicate_browser_title(at):
 
 def test_many_parts_use_dropdown(blank):
     secs = protocol_sections()
-    text = secs[2]["text"]
-    cuts = [text.index(f"{k} Add") for k in (1, 6, 11, 16, 21, 26, 31, 36)]
-    secs[2] = {**secs[2], "subheads": [f"Part {c}" for c in "ABCDEFGH"], "sub_at": cuts}
+    para = "\n\n"
+    text = para.join(f"{k} Add the simulated fluid to the sample and mix it well for one minute." for k in range(1, 81))
+    cuts = [text.index(f"{k} Add") for k in (1, 11, 21, 31, 41, 51, 61, 71)]
+    secs[2] = {**secs[2], "text": text, "subheads": [f"Part {c}" for c in "ABCDEFGH"], "sub_at": cuts}
     at = open_paper_doc(blank, secs)
     next(g for g in at.get("button_group") if g.key == "paper_page").set_value("본문").run()
     next(g for g in at.get("button_group") if g.key == "section_pick").set_value(1).run()
-    assert at.selectbox(key="part_pick").options[0].startswith("처음")   # 부분 9개: 버튼 대신 드롭다운
+    assert at.selectbox(key="part_pick").options[0].startswith("Part A")   # 부분 8개(10문장씩): 버튼 대신 드롭다운
     assert not any(g.key == "part_pick" for g in at.get("button_group"))
     at.selectbox(key="part_pick").set_value(2).run()
-    assert not at.exception and 'class="pp-no">7<' in md_text(at)
+    assert not at.exception and 'class="pp-no">21<' in md_text(at)
+
+
+def test_short_parts_merge_and_numbered_subheads_only():
+    """짧은 부분(8문장 미만)은 다음 부분과 합치고, 마지막이 짧으면 앞과 합친다. 머리말 '처음'은 이름에서 건너뛴다."""
+    from app import NUMBERED_SUB, merge_short_parts
+    parts = [("처음", 0, 2), ("2.1 Binary", 2, 6), ("2.2 Compromise", 6, 10), ("2.3 Scenarios", 10, 39), ("2.5 Four", 39, 44)]
+    assert merge_short_parts(parts) == [("2.1 Binary 외 1", 0, 10), ("2.3 Scenarios 외 1", 10, 44)]
+    assert merge_short_parts([("처음", 0, 20), ("A", 20, 40)]) == [("처음", 0, 20), ("A", 20, 40)]
+    assert NUMBERED_SUB.match("2.1 Binary-Framed Moral Dilemmas") and not NUMBERED_SUB.match("Training")
 
 
 def test_feedback9_range_rules_and_labels(at):
