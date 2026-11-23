@@ -112,11 +112,14 @@ arXiv cs.CL 초록을 연도별(2012·2015·2018·2021·2024·2025) 50편씩 받
 | 경로 | 용도 |
 |---|---|
 | `app.py` | Streamlit 화면 |
-| `src/` | `patterns`(규칙) · `clean`(정리·분리) · `extract`(약어·뼈대·표시) · `collect`(arXiv) · `pdf_text`(PDF 글자·2단 순서) · `sections`(절 나누기) · `tables`(표 찾기) · `glossary`(단어표) · `explain`(단어 AI 풀이) · `translate`(Claude Haiku·DeepL) · `usage`(사용 제한) · `analyze`(평가) |
-| `tests/` | pytest(규칙 양성·음성·경계 사례, 번역 안전장치, 화면 상태) |
-| `data/processed/` | 초록 샘플(CC0), arXiv·번역 캐시 |
+| `src/ui/style.css` | 화면 스타일(색·글자·간격 토큰, `.streamlit/config.toml` 테마와 같은 값) |
+| `src/` | `patterns`(규칙) · `clean`(정리·분리) · `extract`(약어·뼈대·표시) · `collect`(arXiv) · `pdf_text`(PDF 글자·2단 순서) · `sections`(절 나누기) · `tables`(표 찾기) · `glossary`(단어표) · `explain`(단어 AI 풀이) · `translate`(Claude Haiku·DeepL) · `usage`·`quota`(사용 제한) · `saved`·`store`(저장) · `analyze`(평가) |
+| `components/browser_store/` | 번역·문서를 사용자 브라우저에 저장하는 작은 컴포넌트 |
+| `tests/` | pytest(규칙 양성·음성·경계 사례, PDF, 번역 안전장치, 화면 상태) |
+| `data/processed/` | 초록 샘플(CC0), 단어 빈도표, arXiv·번역 캐시, 마스킹 실측 |
 | `docs/` | 계획서, 진행 기록, 체크리스트, 디자인 인계 자료(`design/paperpath-v03`), 스크린샷 |
-| `prototype/` | Phase 2 프로토타입(기록용) |
+
+Phase 2의 첫 프로토타입(`prototype/paper-reader/`)은 main에서 정리하고 태그 [`prototype-phase2`](https://github.com/uisang2004-maker/paper-path/tree/prototype-phase2/prototype/paper-reader)에 남겼습니다.
 
 ## 데이터와 개인정보
 
