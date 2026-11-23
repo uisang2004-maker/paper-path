@@ -551,14 +551,19 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-m.hedge { --mk:255,201,31; }
 .pp-m.abbr, .pp-m.definition { --mk:110,176,240; }
 .pp-m.confident, .pp-m.number { --mk:80,200,140; }
-.pp-m.reference { --mk:180,145,240; }
-.pp-m.hedge, .pp-m.abbr, .pp-m.definition, .pp-m.confident, .pp-m.number, .pp-m.reference {
+.pp-m.hedge, .pp-m.abbr, .pp-m.definition, .pp-m.confident, .pp-m.number {
   color:inherit; font-weight:600; border-bottom:0; border-radius:.35em .15em .4em .2em; padding:0 .18em; margin:0 -.04em;
   background-color:transparent; background-repeat:no-repeat; background-size:100% 74%; background-position:0 80%;
   background-image:linear-gradient(100deg, rgba(var(--mk),0) .5%, rgba(var(--mk),.62) 2.5%, rgba(var(--mk),.42) 9%,
                                    rgba(var(--mk),.38) 90%, rgba(var(--mk),.6) 96.5%, rgba(var(--mk),0) 99.5%);
   -webkit-box-decoration-break:clone; box-decoration-break:clone; }
 .pp-m.term { font-weight:inherit; }   /* 반복 용어는 굵게 하지 않고 가는 밑줄만: 마커보다 한 단계 약하게 */
+/* 참조([4]·Table 2·저자 연도)는 가장 자주 나와서, 칠하지 않고 보라 글자 + 끊긴 밑줄만(Semantic Reader의 인용 표시처럼).
+   형광펜은 추측·확신·수치·약어처럼 읽는 데 판단이 필요한 곳에만 남긴다 */
+.pp-m.reference { color:var(--violet-ink); background:none; font-weight:inherit; padding:0; margin:0; border-radius:0;
+  border-bottom:1.5px dashed var(--c-violet); }
+/* 한국어 번역 글: 영어 원문보다 줄 간격을 조금 더 넓게(한글은 획이 많아 줄 사이가 좁아 보인다) */
+.pp-side-ko, .pp-pair-ko, .pp-sent.pp-ko > div:last-child { line-height:1.85; letter-spacing:.01em; }
 /* 3줄 뼈대 핵심 문장의 밑줄은 연필처럼 가늘게 */
 .pp-u { text-decoration-thickness:1.5px; text-underline-offset:5px; }
 @media (max-width: 640px) {
@@ -590,6 +595,8 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .st-key-mark_pills .stMarkdownColoredBackground[style*="154, 93, 255"] { --mk:180,145,240; }  /* 참조: 보라 */
 .st-key-mark_pills .stMarkdownColoredText { color:var(--ink) !important; border-bottom:2px solid var(--c-blue); padding-bottom:1px; }
 .st-key-mark_pills .stMarkdownColoredText[style*="88, 63, 132"] { border-bottom:2px dotted var(--c-violet); }
+.st-key-mark_pills .stMarkdownColoredText[style*="49, 51, 63"] { color:var(--violet-ink) !important;
+  border-bottom:1.5px dashed var(--c-violet); }   /* 참조: 본문과 같은 보라 글자 + 끊긴 밑줄 */
 .st-key-mark_pills button[aria-pressed="false"] .stMarkdownColoredBackground { background-image:none; }
 .st-key-mark_pills button[aria-pressed="false"] .stMarkdownColoredText { border-bottom-color:transparent; }
 .st-key-mark_pills button[aria-pressed="false"] p, .st-key-mark_pills button[aria-pressed="false"] p span { color:var(--pencil) !important; }
@@ -1347,7 +1354,7 @@ def mark_chips(a) -> None:
         return
     # 칩이 곧 범례: 본문에서 마커로 칠하는 표시는 이름에 같은 마커(배경색 → CSS가 마커 획으로), 밑줄 표시(반복 용어 실선,
     # 어려운 단어 점선)는 이름에 같은 밑줄(글자색 → CSS가 밑줄로). 끈 칩은 CSS가 표시를 지운다
-    under = {"term": "blue", "jargon": "violet"}
+    under = {"term": "blue", "jargon": "violet", "reference": "gray"}   # 참조는 끊긴 밑줄(CSS가 회색 글자를 보라 끊긴 밑줄로)
     label = {k: (f":{under[k]}[{name}] {full[k]}" if k in under else f":{CHIP_COLOR[color]}-background[{name}] {full[k]}")
              for k, name, color in CHIPS}
     ss.mark_pills = [k for k in opts if CHIP_RULE[k] in ss.active_rules]   # 규칙 체크박스와 같은 상태를 쓴다
@@ -2779,7 +2786,7 @@ def hero() -> None:
                 '<span class="pp-m hedge" data-tip="추측·가능성: may — 저자가 단정하지 않는 표현">may</span> help smaller models '
                 'use evidence more consistently '
                 '<span class="pp-m reference" data-tip="참조: [4] — 다른 연구를 가리키는 번호">[4]</span>.</p>'
-                '<figcaption>정규식이 칠한 표시예요. 노란색은 추측 표현, 보라색은 참조 번호, 밑줄은 반복 용어예요.'
+                '<figcaption>정규식이 칠한 표시예요. 노란색은 추측 표현, 보라 끊긴 밑줄은 참조 번호, 파란 밑줄은 반복 용어예요.'
                 '</figcaption></figure>'
                 '</div></div>', unsafe_allow_html=True)
 
