@@ -792,6 +792,38 @@ def mark_chips(a) -> None:
     st.pills("형광펜 켜고 끄기", opts, selection_mode="multi", format_func=label.get, key="mark_pills",
              on_change=on_chip_change, args=(tuple(opts),), label_visibility="collapsed",
              help="누르면 그 표시의 형광펜을 끄고, 다시 누르면 켜요")
+    # 표시를 하나씩 끄지 않고 한 번에: 깨끗한 원문만 읽다가 다시 한 번에 켠다(끄기 전 고른 칩을 기억)
+    any_on = bool(ss.mark_pills)
+    st.button("표시 모두 끄기" if any_on else "표시 다시 켜기", key="marks_all", type="tertiary",
+              icon=":material/ink_eraser:" if any_on else ":material/ink_highlighter:",
+              on_click=toggle_all_marks, args=(tuple(opts), any_on),
+              help="형광펜·밑줄 표시를 한 번에 끄고 원문만 봐요" if any_on else "끄기 전 켜 두었던 표시를 다시 켜요")
+
+
+def toggle_all_marks(opts: tuple, turn_off: bool) -> None:
+    ss = st.session_state
+    if turn_off:
+        ss.marks_saved = list(ss.mark_pills or [])
+        ss.mark_pills = []
+    else:
+        ss.mark_pills = [k for k in (ss.get("marks_saved") or opts) if k in opts] or list(opts)
+    on_chip_change(opts)
+
+
+READ_SIZES = ("small", "normal", "large")
+READ_SIZE_LABEL = {"small": "작게", "normal": "보통", "large": "크게"}
+READ_SCALE = {"small": 0.9, "normal": 1.0, "large": 1.12}     # 원문 18px 기준 16·18·20px 안팎
+
+
+def on_read_size() -> None:
+    size = st.session_state.get("read_size") or "normal"
+    set_pref("read_size", size)                 # 이 브라우저(와 내 계정)에 기억
+
+
+def read_size_style() -> str:
+    """고른 글자 크기를 CSS 변수로(원문·번역·3줄 뼈대 인용이 같이 커지고 작아진다)."""
+    scale = READ_SCALE.get(st.session_state.get("read_size") or "normal", 1.0)
+    return "" if scale == 1.0 else f"<style>:root {{ --read-scale:{scale}; }}</style>"
 
 
 def on_chip_change(opts: tuple) -> None:
@@ -1108,7 +1140,7 @@ def paper_overview(paper) -> None:
         key = "<br>".join(f'<span class="pp-chip blue">{r}</span> {esc(t[:110] + ("…" if len(t) > 110 else ""))}'
                           for r, t in found[:2]) or '<span class="pp-meta">신호 문구로 찾은 문장 없음</span>'
         subs = esc(", ".join(sec.subheads)) or "-"
-        now = ' style="background:#eef4fb"' if i in ss.source.get("section_ids", []) else ""
+        now = ' style="background:var(--blue-soft)"' if i in ss.source.get("section_ids", []) else ""
         rows.append(f"<tr{now}><td><b>{esc(sec.title)}</b></td><td>{len(a.sentences)}</td><td>{key}</td>"
                     f"<td>{subs}</td></tr>")
     tables = ss.get("paper_tables") or []
@@ -2277,8 +2309,13 @@ def reading_page() -> None:
                     unsafe_allow_html=True)
 
     # 제목 줄(02 · 단계 보기 토글) 아래에 칩을 한 줄 전체 폭으로: 가운데 좁은 칸에 두면 칩이 많을 때 토글을 덮었다
-    t1, t3 = st.columns([3, 1], vertical_alignment="center")
+    t1, t2, t3 = st.columns([2.2, 1, 1], vertical_alignment="center")
     t1.markdown(sec_head("02", "원문과 번역 읽기"), unsafe_allow_html=True)
+    with t2, st.container(key="read_size_bar"):   # 눈이 편한 글자 크기를 사람마다
+        ss.setdefault("read_size", ss.prefs.get("read_size") or "normal")
+        st.segmented_control("글자 크기", READ_SIZES, key="read_size", format_func=READ_SIZE_LABEL.get,
+                             on_change=on_read_size, label_visibility="collapsed", help="원문·번역 글자 크기")
+    st.markdown(read_size_style(), unsafe_allow_html=True)
     with t3:
         st.toggle("읽기 전용 단계 보기", key="show_steps")
     # 읽기 도구 한 줄: 형광펜 칩(왼쪽)과 읽기 모드(오른쪽). 원문까지의 거리를 줄인다(칩 설명은 칩의 도움말 ⓘ에)

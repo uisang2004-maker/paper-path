@@ -1,15 +1,26 @@
 [theme]
 # 앱 CSS의 토큰(:root)과 같은 값. 기본 모양은 테마로 잡고, CSS는 세부만(Streamlit을 올려도 덜 깨지게)
-base = "light"
+# 밝은 화면·어두운 화면 두 가지를 두어, 이용자의 시스템·브라우저 설정(라이트/다크)을 자동으로 따른다
+baseRadius = "8px"                  # 둥글기 단계 4·8·12px의 기본
+font = "Pretendard:https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css, sans-serif"
+codeFont = "monospace"
+
+[theme.light]
 primaryColor = "#1f3a5f"            # --action
 backgroundColor = "#f1f3f5"         # --desk
 secondaryBackgroundColor = "#f4f6f8" # --wash
 textColor = "#1b2733"               # --ink
 linkColor = "#2a5d8f"               # --link
 borderColor = "#d9dfe5"             # --rule
-baseRadius = "8px"                  # 둥글기 단계 4·8·12px의 기본
-font = "Pretendard:https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css, sans-serif"
-codeFont = "monospace"
+
+[theme.dark]
+# 순수한 검정·흰색 대신 짙은 회청색 바탕과 미색 글자(눈부심을 줄이려고). src/ui/style.css의 다크 토큰과 같은 값
+primaryColor = "#3d6fa3"            # --action
+backgroundColor = "#14181d"         # --desk
+secondaryBackgroundColor = "#222831" # --wash
+textColor = "#e3e7ec"               # --ink
+linkColor = "#8cb8e6"               # --link
+borderColor = "#343c46"             # --rule
 
 [server]
 maxUploadSize = 20

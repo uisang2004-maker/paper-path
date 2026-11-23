@@ -69,6 +69,27 @@ def test_chip_turns_highlight_off_and_on(at):
     assert "HEDGE" in at.session_state["active_rules"] and 'class="pp-m hedge"' in md_text(at)
 
 
+def test_all_marks_off_and_back_on(at):
+    """'표시 모두 끄기'는 형광펜을 한 번에 끄고, '표시 다시 켜기'는 끄기 전에 켜 두었던 것만 다시 켠다."""
+    mark_chips(at).unselect("hedge").run()                 # 추측은 미리 꺼 둔다
+    before = set(mark_chips(at).value)
+    at.button(key="marks_all").click().run()
+    assert not at.exception
+    out = md_text(at)
+    assert mark_chips(at).value == [] and 'class="pp-m ' not in out.split("pp-sents", 1)[-1]
+    assert at.button(key="marks_all").label == "표시 다시 켜기"
+    at.button(key="marks_all").click().run()
+    assert set(mark_chips(at).value) == before and "HEDGE" not in at.session_state["active_rules"]
+
+
+def test_read_size_scales_reading_text(at):
+    """글자 크기 '크게'를 고르면 읽는 글 크기 배수가 1.12로 바뀌고, 브라우저 설정에도 남는다."""
+    assert "--read-scale:" not in md_text(at).split("</style>", 1)[-1]      # 보통이면 따로 넣지 않는다
+    next(g for g in at.get("button_group") if g.key == "read_size").set_value("large").run()
+    assert not at.exception
+    assert "--read-scale:1.12" in md_text(at) and at.session_state["prefs"]["read_size"] == "large"
+
+
 def test_translation_not_called_on_load(at, monkeypatch):
     # 번역 패널에는 '번역하기' 버튼만 있고 결과는 없다
     assert any(b.label == "번역하기" for b in at.button)
