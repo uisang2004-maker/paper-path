@@ -486,6 +486,10 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 /* 한국어 번역 글: 영어 원문보다 줄 간격을 조금 더 넓게(한글은 획이 많아 줄 사이가 좁아 보인다) */
 .pp-side-ko, .pp-pair-ko, .pp-sent.pp-ko > div:last-child { line-height:calc(1.85 * var(--read-lh, 1)); letter-spacing:.01em;
   font-size:calc(16px * var(--read-scale, 1)); }   /* 한국어 번역 16px 기준, 글자 크기 조절을 같이 따른다 */
+/* 번역 문장은 안쪽 .pp-text 상자에 들어 있어(그 상자가 14px·줄 간격 1.75로 고정) 위 크기·줄 간격이 닿지 않았다 → 물려받게 */
+.pp-side-ko .pp-text, .pp-pair-ko .pp-text, .pp-sent.pp-ko .pp-text { font-size:inherit; line-height:inherit; letter-spacing:inherit; }
+/* 3줄 뼈대 카드 아래 한국어 번역도 영어 인용과 같은 비율로 */
+.pp-sk-ko { font-size:calc(14px * var(--read-scale, 1)); line-height:calc(1.6 * var(--read-lh, 1)); }
 /* 3줄 뼈대 핵심 문장의 밑줄은 연필처럼 가늘게 */
 .pp-u { text-decoration-thickness:1.5px; text-underline-offset:5px; }
 @media (max-width: 640px) {
