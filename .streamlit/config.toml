@@ -1,9 +1,15 @@
 [theme]
+# 앱 CSS의 토큰(:root)과 같은 값. 기본 모양은 테마로 잡고, CSS는 세부만(Streamlit을 올려도 덜 깨지게)
 base = "light"
-primaryColor = "#152c49"
-backgroundColor = "#f6f8fc"
-secondaryBackgroundColor = "#eef3f8"
-textColor = "#14263e"
+primaryColor = "#1f3a5f"            # --action
+backgroundColor = "#f1f3f5"         # --desk
+secondaryBackgroundColor = "#f4f6f8" # --wash
+textColor = "#1b2733"               # --ink
+linkColor = "#2a5d8f"               # --link
+borderColor = "#d9dfe5"             # --rule
+baseRadius = "8px"                  # 둥글기 단계 4·8·12px의 기본
+font = "Pretendard:https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css, sans-serif"
+codeFont = "monospace"
 
 [server]
 maxUploadSize = 20
