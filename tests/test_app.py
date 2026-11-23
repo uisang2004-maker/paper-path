@@ -82,12 +82,23 @@ def test_all_marks_off_and_back_on(at):
     assert set(mark_chips(at).value) == before and "HEDGE" not in at.session_state["active_rules"]
 
 
-def test_read_size_scales_reading_text(at):
-    """글자 크기 '크게'를 고르면 읽는 글 크기 배수가 1.12로 바뀌고, 브라우저 설정에도 남는다."""
-    assert "--read-scale:" not in md_text(at).split("</style>", 1)[-1]      # 보통이면 따로 넣지 않는다
-    next(g for g in at.get("button_group") if g.key == "read_size").set_value("large").run()
+def test_read_settings_font_size_font_and_spacing(at):
+    """읽기 설정: 글자 크기를 1px 단위(슬라이더)로, 영어·한국어 글꼴과 줄 간격을 고르면 CSS 변수로 들어가고 설정에 남는다.
+    '기본값으로'를 누르면 모두 처음으로."""
+    assert ":root { --read-scale" not in md_text(at)                         # 모두 기본값이면 따로 넣지 않는다
+    at.slider(key="read_px").set_value(21).run()
     assert not at.exception
-    assert "--read-scale:1.12" in md_text(at) and at.session_state["prefs"]["read_size"] == "large"
+    assert "--read-scale:1.1667;" in md_text(at) and at.session_state["prefs"]["read_px"] == 21
+    group = {g.key: g for g in at.get("button_group")}
+    group["read_font_en"].set_value("sans").run()
+    {g.key: g for g in at.get("button_group")}["read_font_ko"].set_value("myeongjo").run()
+    {g.key: g for g in at.get("button_group")}["read_lh"].set_value("loose").run()
+    out = md_text(at)
+    assert "--en-font:Pretendard" in out and '--ko-font:"Noto Serif KR"' in out and "--read-lh:1.15;" in out
+    assert at.session_state["prefs"]["read_lh"] == "loose"
+    at.button(key="read_reset").click().run()
+    assert ":root { --read-scale" not in md_text(at) and "--en-font:" not in md_text(at).split("</style>", 1)[-1]
+    assert at.session_state["read_px"] == 18 and at.session_state["prefs"]["read_font_ko"] == "gothic"
 
 
 def test_translation_not_called_on_load(at, monkeypatch):

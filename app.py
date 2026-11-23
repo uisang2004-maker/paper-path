@@ -810,20 +810,76 @@ def toggle_all_marks(opts: tuple, turn_off: bool) -> None:
     on_chip_change(opts)
 
 
-READ_SIZES = ("small", "normal", "large")
-READ_SIZE_LABEL = {"small": "작게", "normal": "보통", "large": "크게"}
-READ_SCALE = {"small": 0.9, "normal": 1.0, "large": 1.12}     # 원문 18px 기준 16·18·20px 안팎
+# 읽기 설정: 사람마다 눈이 편한 글자 크기·글꼴·줄 간격이 달라서 직접 고르게 한다(고른 값은 브라우저·계정에 기억)
+READ_PX_DEFAULT, READ_PX_MIN, READ_PX_MAX = 18, 14, 26        # 영어 원문 글자 크기(px). 번역·뼈대 인용은 같은 비율로
+READ_FONTS_EN = ("serif", "sans")
+READ_FONT_EN_LABEL = {"serif": "세리프", "sans": "산세리프"}
+READ_FONTS_KO = ("gothic", "myeongjo")
+READ_FONT_KO_LABEL = {"gothic": "고딕", "myeongjo": "명조"}
+READ_LH = ("tight", "normal", "loose")
+READ_LH_LABEL = {"tight": "좁게", "normal": "보통", "loose": "넓게"}
+READ_LH_SCALE = {"tight": 0.9, "normal": 1.0, "loose": 1.15}
+READ_PREFS = {"read_px": READ_PX_DEFAULT, "read_font_en": "serif", "read_font_ko": "gothic", "read_lh": "normal"}
 
 
-def on_read_size() -> None:
-    size = st.session_state.get("read_size") or "normal"
-    set_pref("read_size", size)                 # 이 브라우저(와 내 계정)에 기억
+def read_cfg() -> dict:
+    """읽기 설정의 진짜 값(위젯 상태와 따로 둔다). 처음에는 브라우저·계정에 기억된 값, 없으면 기본값."""
+    ss = st.session_state
+    loaded = bool(ss.get("browser_loaded"))     # 브라우저에 기억된 설정은 앱이 뜬 뒤 조금 늦게 도착한다
+    if "read_cfg" not in ss or (loaded and not ss.get("read_cfg_synced")):
+        ss.read_cfg = {name: ss.prefs.get(name, value) for name, value in READ_PREFS.items()}
+        ss.read_cfg_synced = loaded
+    return ss.read_cfg
+
+
+def on_read_pref(name: str) -> None:
+    value = st.session_state.get(name)
+    if value is None:                           # 같은 버튼을 다시 눌러 선택이 풀리면 기본값으로
+        value = READ_PREFS[name]
+    read_cfg()[name] = value
+    set_pref(name, value)                       # 이 브라우저(와 내 계정)에 기억
+
+
+def reset_read_prefs() -> None:
+    for name, value in READ_PREFS.items():
+        read_cfg()[name] = value
+        set_pref(name, value)
+
+
+def read_settings() -> None:
+    """02 제목 줄의 '읽기 설정' 창: 원문 글자 크기(1px 단위), 영어·한국어 글꼴, 줄 간격.
+    창 안의 위젯은 한 번도 열지 않으면 브라우저에 그려지지 않아, 다시 그릴 때 값이 기본값(14px·선택 없음)으로
+    돌아갔다. 그래서 진짜 값은 read_cfg에 두고, 그릴 때마다 위젯 값을 거기서 채운다."""
+    ss = st.session_state
+    for name, value in read_cfg().items():
+        ss[name] = value
+    with st.popover("읽기 설정", icon=":material/tune:", use_container_width=True,   # 이름이 바뀌면 창이 닫히므로 고정
+                    help="글자 크기·글꼴·줄 간격을 눈이 편하게"):
+        st.slider("영어 원문 글자 크기(px)", READ_PX_MIN, READ_PX_MAX, step=1, key="read_px",
+                  on_change=on_read_pref, args=("read_px",), help="한국어 번역과 3줄 뼈대 인용도 같은 비율로 바뀌어요")
+        st.segmented_control("영어 원문 글꼴", READ_FONTS_EN, key="read_font_en", format_func=READ_FONT_EN_LABEL.get,
+                             on_change=on_read_pref, args=("read_font_en",))
+        st.segmented_control("한국어 번역 글꼴", READ_FONTS_KO, key="read_font_ko", format_func=READ_FONT_KO_LABEL.get,
+                             on_change=on_read_pref, args=("read_font_ko",))
+        st.segmented_control("줄 간격", READ_LH, key="read_lh", format_func=READ_LH_LABEL.get,
+                             on_change=on_read_pref, args=("read_lh",))
+        st.button("기본값으로", key="read_reset", type="tertiary", icon=":material/restart_alt:", on_click=reset_read_prefs)
 
 
 def read_size_style() -> str:
-    """고른 글자 크기를 CSS 변수로(원문·번역·3줄 뼈대 인용이 같이 커지고 작아진다)."""
-    scale = READ_SCALE.get(st.session_state.get("read_size") or "normal", 1.0)
-    return "" if scale == 1.0 else f"<style>:root {{ --read-scale:{scale}; }}</style>"
+    """고른 읽기 설정을 CSS 변수로(원문·번역·3줄 뼈대 인용에 같이 적용). 모두 기본값이면 아무것도 넣지 않는다."""
+    cfg = read_cfg()
+    px = cfg["read_px"] or READ_PX_DEFAULT
+    rules = []
+    if px != READ_PX_DEFAULT:
+        rules.append(f"--read-scale:{round(px / READ_PX_DEFAULT, 4)};")
+    if (cfg["read_lh"] or "normal") != "normal":
+        rules.append(f"--read-lh:{READ_LH_SCALE[cfg['read_lh']]};")
+    if cfg["read_font_en"] == "sans":
+        rules.append('--en-font:Pretendard, "Malgun Gothic", sans-serif;')
+    if cfg["read_font_ko"] == "myeongjo":
+        rules.append('--ko-font:"Noto Serif KR", "Batang", serif;')
+    return f"<style>:root {{ {' '.join(rules)} }}</style>" if rules else ""
 
 
 def on_chip_change(opts: tuple) -> None:
@@ -2311,10 +2367,8 @@ def reading_page() -> None:
     # 제목 줄(02 · 단계 보기 토글) 아래에 칩을 한 줄 전체 폭으로: 가운데 좁은 칸에 두면 칩이 많을 때 토글을 덮었다
     t1, t2, t3 = st.columns([2.2, 1, 1], vertical_alignment="center")
     t1.markdown(sec_head("02", "원문과 번역 읽기"), unsafe_allow_html=True)
-    with t2, st.container(key="read_size_bar"):   # 눈이 편한 글자 크기를 사람마다
-        ss.setdefault("read_size", ss.prefs.get("read_size") or "normal")
-        st.segmented_control("글자 크기", READ_SIZES, key="read_size", format_func=READ_SIZE_LABEL.get,
-                             on_change=on_read_size, label_visibility="collapsed", help="원문·번역 글자 크기")
+    with t2, st.container(key="read_size_bar"):   # 눈이 편한 글자 크기·글꼴·줄 간격을 사람마다
+        read_settings()
     st.markdown(read_size_style(), unsafe_allow_html=True)
     with t3:
         st.toggle("읽기 전용 단계 보기", key="show_steps")
