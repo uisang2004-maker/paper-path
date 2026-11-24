@@ -640,3 +640,45 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 @media (prefers-color-scheme: dark) {
   .pp-info:hover::after, .pp-info:focus::after { background:#2c333c; color:#eef1f4; }
 }
+
+/* ---- 첫 화면 시안 반영(유리 카드·은은한 빛). 빛나는 효과는 첫 화면에만: 논문을 읽는 화면은 차분하게 둔다 ---- */
+/* 견본 문장 카드: 그림이 비치는 유리 카드(글자는 그대로 진하게 읽히도록 바탕은 충분히 불투명하게) */
+.pp-hero-sample { background:rgba(253,252,250,.82); border-color:rgba(255,255,255,.7);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:0 8px 24px rgba(31,58,95,.08); }
+/* 위쪽 메뉴: 고른 메뉴를 알약 모양으로, 아래 선에 은은한 빛 */
+.st-key-nav [data-testid="stRadioOption"][data-selected="true"] { border-radius:10px;
+  box-shadow: inset 0 0 0 1px var(--rule), inset 0 -2px 0 var(--link), 0 4px 12px rgba(42,93,143,.12); }
+/* 넣는 방식 버튼 묶음 아이콘은 글자색과 같이 */
+.st-key-input_panel [data-testid="stButtonGroup"] span[data-testid="stIconMaterial"] { font-size:16px; }
+/* 'PDF 파일 고르기': 눌러야 할 단 하나의 버튼이라 테두리를 파랑으로 살짝 띄움 */
+.st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button { border-color:var(--c-blue) !important; box-shadow:0 2px 10px rgba(42,93,143,.14); }
+
+@media (prefers-color-scheme: dark) {
+  /* 어두운 화면 첫 화면: 시안 그림(어두운 바탕에 빛나는 논문·돋보기·차트). 그림 왼쪽 끝은 바탕색으로 이어 둠 */
+  .pp-hero { background:#0e131d url('app/static/hero_dark.jpg') right center / auto 100% no-repeat; min-height:340px; }
+  .pp-hero::before { background:linear-gradient(90deg, rgba(14,19,29,.92) 0%, rgba(14,19,29,.7) 36%, rgba(14,19,29,0) 56%); }
+  .stApp .pp-hero-h1 { color:#f1f4f8; }
+  .pp-hero-sample { background:rgba(30,37,48,.62); border-color:rgba(255,255,255,.12);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 30px rgba(0,0,0,.35); }
+  .st-key-nav [data-testid="stRadioOption"][data-selected="true"] { background:rgba(61,111,163,.2);
+    box-shadow: inset 0 0 0 1px rgba(140,184,230,.35), inset 0 -2px 0 var(--link), 0 0 16px rgba(110,160,230,.25); }
+  .st-key-pdf_drop [data-testid="stFileUploaderDropzone"] button { border-color:rgba(140,184,230,.55) !important;
+    box-shadow:0 0 0 1px rgba(140,184,230,.15), 0 0 18px rgba(110,160,230,.28); }
+}
+@media (prefers-color-scheme: dark) and (max-width: 900px) {
+  .pp-hero { min-height:0; background-size:cover; background-position:70% center; }
+  .pp-hero::before { background:linear-gradient(180deg, rgba(14,19,29,.86) 0%, rgba(14,19,29,.72) 100%); }
+}
+/* 휴대폰: 넣는 방식 버튼 셋이 한 줄에 들어가도록 아이콘은 빼고 글자만 */
+@media (max-width: 640px) {
+  .st-key-input_panel [data-testid="stButtonGroup"] [data-testid="stIconMaterial"] { display:none; }
+  .st-key-input_panel [data-testid="stButtonGroup"] > div { width:100%; }
+  .st-key-input_panel [data-testid="stButtonGroup"] button { flex:1 1 auto; min-width:0; padding:0 8px; }
+  .st-key-input_panel [data-testid="stButtonGroup"] button p { font-size:13px; white-space:nowrap; }
+}
+/* 어두운 화면에서 고른 버튼(넣는 방식·읽기 모드 등) 글자가 바탕에 묻히던 것(#3d6fa3 on #14181d, 대비 약 3:1)을 밝은 파랑으로 */
+@media (prefers-color-scheme: dark) {
+  .stApp [data-testid="stButtonGroup"] button[aria-checked="true"] { color:#a9cdf2 !important; background:rgba(61,111,163,.24) !important;
+    border-color:rgba(140,184,230,.5) !important; }
+  .stApp [data-testid="stButtonGroup"] button[aria-checked="true"] p { color:inherit !important; }
+}
