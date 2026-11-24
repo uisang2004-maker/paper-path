@@ -33,12 +33,12 @@ API_URL = "https://api-free.deepl.com/v2/translate"
 SSL_CTX = ssl.create_default_context(cafile=certifi.where())
 
 ERROR_MESSAGES = {
-    429: "요청이 몰려 번역을 잠시 사용할 수 없어요. 잠시 뒤 다시 눌러 주세요.",
-    456: "이번 달 DeepL 무료 한도를 다 썼어요. 번역 없이도 독해 표시는 그대로 볼 수 있어요.",
-    403: "DeepL API 키를 확인할 수 없어요(.env의 DEEPL_API_KEY).",
+    429: "요청이 몰려 번역을 잠시 사용할 수 없습니다. 잠시 뒤 다시 눌러 주십시오.",
+    456: "이번 달 DeepL 무료 한도를 다 썼습니다. 번역 없이도 독해 표시는 그대로 볼 수 있습니다.",
+    403: "DeepL API 키를 확인할 수 없습니다(.env의 DEEPL_API_KEY).",
 }
-NETWORK_MESSAGE = "DeepL에 연결하지 못했어요. 번역을 잠시 사용할 수 없어요."
-NO_KEY_MESSAGE = "DeepL API 키가 없어 새 번역은 할 수 없어요. 저장된 예시 번역만 볼 수 있어요."
+NETWORK_MESSAGE = "DeepL에 연결하지 못했습니다. 번역을 잠시 사용할 수 없습니다."
+NO_KEY_MESSAGE = "DeepL API 키가 없어 새 번역은 할 수 없습니다. 저장된 예시 번역만 볼 수 있습니다."
 
 
 class TranslationError(Exception):
@@ -245,7 +245,7 @@ def call_deepl(texts: list[str], api_key: str, split_sentences: str) -> list[str
         with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
             data = json.loads(resp.read())
     except urllib.error.HTTPError as e:
-        raise TranslationError(ERROR_MESSAGES.get(e.code, f"DeepL 오류(HTTP {e.code})로 번역하지 못했어요."), e.code) from e
+        raise TranslationError(ERROR_MESSAGES.get(e.code, f"DeepL 오류(HTTP {e.code})로 번역하지 못했습니다."), e.code) from e
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         raise TranslationError(NETWORK_MESSAGE) from e
     return [t["text"] for t in data["translations"]]
@@ -283,19 +283,19 @@ def _claude_one(xml: str, api_key: str, client=None, system: str = CLAUDE_SYSTEM
             messages=[{"role": "user", "content": xml}],
         )
     except anthropic.AuthenticationError as e:
-        raise TranslationError("Claude API 키를 확인할 수 없어요(ANTHROPIC_API_KEY).", 403) from e
+        raise TranslationError("Claude API 키를 확인할 수 없습니다(ANTHROPIC_API_KEY).", 403) from e
     except anthropic.PermissionDeniedError as e:
-        raise TranslationError("Claude API 사용 권한이나 결제 설정을 확인해 주세요.", 403) from e
+        raise TranslationError("Claude API 사용 권한이나 결제 설정을 확인해 주십시오.", 403) from e
     except anthropic.RateLimitError as e:
         raise TranslationError(ERROR_MESSAGES[429], 429) from e
     except anthropic.APIStatusError as e:
-        raise TranslationError(f"Claude 오류(HTTP {e.status_code})로 {task}하지 못했어요.", e.status_code) from e
+        raise TranslationError(f"Claude 오류(HTTP {e.status_code})로 {task}하지 못했습니다.", e.status_code) from e
     except anthropic.APIConnectionError as e:
-        raise TranslationError(f"Claude에 연결하지 못했어요. {task} 기능을 잠시 사용할 수 없어요.") from e
+        raise TranslationError(f"Claude에 연결하지 못했습니다. {task} 기능을 잠시 사용할 수 없습니다.") from e
     if resp.stop_reason == "refusal":
-        raise TranslationError(f"AI가 이 글을 처리하지 않았어요({task}). 독해 표시는 그대로 볼 수 있어요.")
+        raise TranslationError(f"AI가 이 글을 처리하지 않았습니다({task}). 독해 표시는 그대로 볼 수 있습니다.")
     if resp.stop_reason == "max_tokens":
-        raise TranslationError(f"글이 길어 AI {task} 답이 중간에 끊겼어요. 더 짧은 부분으로 나눠 주세요.")
+        raise TranslationError(f"글이 길어 AI {task} 답이 중간에 끊겼습니다. 더 짧은 부분으로 나눠 주십시오.")
     return "".join(b.text for b in resp.content if b.type == "text").strip()
 
 

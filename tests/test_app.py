@@ -31,9 +31,9 @@ def md_text(at):
 
 def test_start_screen_hides_results_until_input(blank):
     text = "\n".join(m.value for m in blank.markdown if not m.value.lstrip().startswith("<style"))
-    assert "끌어다 놓으세요" in text and "논문 넣기" in text
+    assert "끌어다 놓으십시오" in text and "논문 넣기" in text
     assert 'class="pp-flow"' not in text and "pp-reader-title" not in text and "먼저 읽을 3줄 뼈대" not in text
-    assert "정규식이 칠한 표시예요" in text and 'class="pp-hero"' in text        # 첫 화면 히어로
+    assert 'class="pp-hero-sample"' in text and 'class="pp-hero"' in text        # 첫 화면 히어로(견본 문장)
     assert blank.session_state["input_mode"] == "논문 PDF"
     assert not any(b.label == "번역하기" for b in blank.button)
 
@@ -151,7 +151,7 @@ def test_translation_result_survives_rule_toggle(at):
 def test_paste_validation_error(blank):
     blank.session_state["input_mode"] = "텍스트 붙여 넣기"
     blank.run()
-    blank.text_area(key="paste_text").set_value("한국어 문장만 있어요.").run()
+    blank.text_area(key="paste_text").set_value("한국어 문장만 있습니다.").run()
     blank.button(key="load_btn").click().run()
     assert any("영어 텍스트가 아닌" in e.value for e in blank.error)
     assert blank.session_state["show_input"] is True        # 실패하면 입력 칸이 그대로 열려 있다
@@ -191,12 +191,12 @@ def test_korean_highlights_follow_rules(at):
                                                                protected=[[]] * len(ko))}
     at.run()
     text = md_text(at)
-    assert "영어 &#x27;suggest&#x27;에 대응" in text or "영어 'suggest'에 대응" in text
+    assert "원문 &#x27;suggest&#x27;" in text or "원문 'suggest'" in text
     at.toggle(key="show_steps").set_value(True).run()
     at.checkbox(key="rule_HEDGE").uncheck().run()
     text = md_text(at)
-    assert "suggest&#x27;에 대응" not in text and "'suggest'에 대응" not in text
-    assert "[4]&#x27;에 대응" in text or "'[4]'에 대응" in text
+    assert "원문 &#x27;suggest&#x27;" not in text and "원문 'suggest'" not in text
+    assert "원문 &#x27;[4]&#x27;" in text or "원문 '[4]'" in text
 
 
 def test_cards_show_korean_and_underline(at):
@@ -286,7 +286,7 @@ def test_frequent_term_tooltip_shows_meaning(at):
     at.session_state["input_text"] = text
     at.run()
     before = md_text(at)
-    assert "누르면 여기에 떠요" in before                                     # 뜻을 모르면 받는 방법 안내
+    assert "reranker: 이 글에 4번 나옵니다" in before                          # 뜻을 모르면 횟수만
     key = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
     at.session_state["ai_gloss"] = {key: {"reranker": "검색 결과 순위를 다시 매기는 모델"}}
     at.run()
@@ -314,8 +314,8 @@ def test_korean_highlight_tooltip_matches_english(at):
     at.session_state["ai_gloss"] = {tk: {"reranker": "검색 결과 순위를 다시 매기는 모델"}}
     at.run()
     out = H.unescape(md_text(at))
-    assert "reranker: 검색 결과 순위를 다시 매기는 모델 · 이 글에 4번 · 영어 'reranker'에 대응" in out
-    assert "추측·가능성" in out and "영어 'may'에 대응" in out
+    assert "reranker: 검색 결과 순위를 다시 매기는 모델 (이 글에 4번) — 원문 'reranker'" in out
+    assert "추측·가능성" in out and "원문 'may'" in out
 
 
 def test_tables_and_figures_inline_after_first_mention(at):
@@ -333,7 +333,7 @@ def test_tables_and_figures_inline_after_first_mention(at):
     text = "\n".join(m.value for m in at.markdown)
     assert ".pp-flt-table-1{background-image:url(data:image/png;base64," in text
     assert text.count('class="pp-float"') == 2                       # 표 1·그림 2, 처음 언급한 문장 아래 한 번씩
-    assert 'class="pp-pop"' in text and "Table 1: 문장 2 아래에 있어요" in text   # 3번째 문장의 두 번째 언급
+    assert 'class="pp-pop"' in text and "Table 1: 문장 2 아래에 있습니다" in text   # 3번째 문장의 두 번째 언급
 
 
 def test_tables_also_appear_in_korean_translation(at):
@@ -384,7 +384,7 @@ def test_reopen_saved_pdf_document_without_file(blank):
     ss = blank.session_state
     assert ss["source"]["kind"] == "pdf" and ss["input_text"] == secs[0]["text"] and not ss["show_input"]
     out = "\n".join(m.value for m in [*blank.markdown, *blank.caption])   # 논문 안내(notes)는 00 아래 caption
-    assert "우리는 작은 재순위 모델을 제안한다." in out and "표·그림은 PDF를 다시 넣으면 보여요." in out
+    assert "우리는 작은 재순위 모델을 제안한다." in out and "표·그림은 PDF를 다시 넣으면 보입니다." in out
     assert any(e.label.startswith("논문 전체 보기") for e in blank.expander)   # 펼침 칸 셋을 하나(탭)로 묶음
     blank.button(key="reinput_btn").click().run()
     blank.button(key=f"doc_del_{rec['id']}").click().run()
@@ -412,7 +412,7 @@ def test_missing_problem_card_explains_and_zero_chips_hidden(at):
                                       "Results show that Foo improves accuracy by 3%.")
     at.run()
     out = "\n".join(m.value for m in at.markdown if not m.value.lstrip().startswith("<style"))
-    assert "첫 문장부터 바로 방법을 소개해요" in out and "지어낸 문장으로 채우지 않아요" in out
+    assert "첫 문장부터 바로 방법을 소개합니다" in out and "지어낸 문장" not in out
     assert not any("추측·가능성" in o for o in mark_chips(at).options)   # 0개인 표시는 칩이 없다
 
 
@@ -607,7 +607,7 @@ def test_materials_section_shows_found_cards_first(blank):
 
 
 def test_resume_where_left_off(blank):
-    """다시 연 문서에 지난 위치가 있으면 '이어서 보시겠어요?' → 그 쪽·절·부분·읽기 모드로."""
+    """다시 연 문서에 지난 위치가 있으면 '이어서 보시겠습니까?' → 그 쪽·절·부분·읽기 모드로."""
     from src import saved as SV
     rec = SV.doc_record("pdf", "A Protocol Paper", protocol_sections(),
                         {"last": {"page": "본문", "body": 1, "part": 1, "mode": "en", "label": "본문 › Procedure (2/2 부분)"}})
@@ -617,7 +617,7 @@ def test_resume_where_left_off(blank):
     assert "지난번: 본문 › Procedure (2/2 부분)" in out and 'pp-doc-blank">A<' in out   # 카드: 그림 없으면 첫 글자
     assert any(b.label == "이어서 보기" for b in blank.button)
     blank.button(key=f"doc_open_{rec['id']}").click().run()
-    assert "이어서 보시겠어요?" in md_text(blank)
+    assert "이어서 보시겠습니까?" in md_text(blank)
     blank.button(key="resume_yes").click().run()
     assert not blank.exception
     ss = blank.session_state
@@ -694,4 +694,4 @@ def test_logo_goes_home_and_help_in_sticky_bar(at):
     text = at.session_state["input_text"]
     at.button(key="go_home").click().run()
     assert not at.exception and at.session_state["show_input"] is True and at.session_state["page"] == "논문 읽기"
-    assert "정규식이 칠한 표시예요" in md_text(at) and at.session_state["input_text"] == text
+    assert 'class="pp-hero-sample"' in md_text(at) and at.session_state["input_text"] == text

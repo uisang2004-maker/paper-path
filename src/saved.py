@@ -89,9 +89,9 @@ def from_file(data: bytes) -> dict:
     try:
         doc = json.loads(data.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as e:
-        raise ValueError("PaperPath 결과 파일이 아니에요(JSON을 읽지 못함).") from e
+        raise ValueError("PaperPath 결과 파일이 아닙니다(JSON을 읽지 못함).") from e
     if not isinstance(doc, dict) or doc.get("format") != FORMAT or not isinstance(doc.get("items"), dict):
-        raise ValueError("PaperPath 결과 파일이 아니에요(형식이 달라요).")
+        raise ValueError("PaperPath 결과 파일이 아닙니다(형식이 다릅니다).")
     return doc["items"]
 
 

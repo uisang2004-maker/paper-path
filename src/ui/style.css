@@ -157,7 +157,19 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-meta { color:var(--pencil); font-size:12px; }
 .pp-names-label { font-size:13px; font-weight:700; color:var(--text); }
 .pp-names .pp-chips { justify-content:flex-start; }
-.pp-info { cursor:help; color:var(--link); font-weight:700; }
+.pp-info { position:relative; cursor:help; color:var(--link); font-weight:700; font-size:13px; outline-offset:2px; }
+/* ⓘ 설명창: 표시 설명창(.pp-m)과 같은 모양, 아이콘 아래쪽에(제목 줄 위는 잘리기 쉬워서) */
+.pp-info:hover::after, .pp-info:focus::after { content:attr(data-tip); position:absolute; right:-8px; top:calc(100% + 6px); z-index:30;
+  background:var(--ink); color:var(--paper); font-size:12px; font-weight:400; line-height:1.5; padding:8px 12px; border-radius:8px;
+  width:max-content; max-width:min(320px, 80vw); white-space:normal; text-align:left; box-shadow:0 6px 16px rgba(0,0,0,.18); }
+.pp-field-label .pp-info:hover::after, .pp-field-label .pp-info:focus::after { left:-8px; right:auto; }
+.pp-drop-hint .pp-info:hover::after, .pp-drop-hint .pp-info:focus::after { left:50%; right:auto; transform:translateX(-50%); }
+/* 좁은 화면: 설명창이 화면 밖으로 나가지 않게 양쪽 16px 안쪽 폭으로(세로 위치는 아이콘 바로 아래 그대로) */
+@media (max-width: 640px) {
+  .pp-info:hover::after, .pp-info:focus::after, .pp-field-label .pp-info:hover::after, .pp-field-label .pp-info:focus::after,
+  .pp-drop-hint .pp-info:hover::after, .pp-drop-hint .pp-info:focus::after {
+    position:fixed; top:auto; left:16px; right:16px; width:auto; max-width:none; transform:none; margin-top:24px; }
+}
 [data-testid="stCaptionContainer"] { color:var(--pencil) !important; }
 .pp-sents { padding:8px 16px 12px; }
 .pp-sent { display:grid; grid-template-columns:24px 1fr; gap:12px; padding:8px 0; border-bottom:1px solid var(--rule-soft); }
@@ -622,4 +634,8 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
   .stApp [data-testid="stAlert"]:has([data-testid="stAlertContentError"]) > div { background:#3a2522; border-color:#6b3a32; }
   .stApp [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) > div { border-color:#6b5a32; }
   .pp-tour-on { color:#1b2733 !important; }      /* 사용법 안내가 노랗게 칠한 단어는 어두운 글자로 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .pp-info:hover::after, .pp-info:focus::after { background:#2c333c; color:#eef1f4; }
 }

@@ -22,12 +22,12 @@ def check_user(day_usage: dict, doc_id: str, started_before: bool, chars: int) -
     docs = day_usage.get("docs") or {}
     cur = docs.get(doc_id)
     if cur is None and not started_before and new_papers(day_usage) >= PAPERS_PER_DAY:
-        return (f"오늘은 새 논문 {PAPERS_PER_DAY}편까지 번역할 수 있어요. 오늘 번역을 시작한 논문과 예전에 번역하던 논문은 "
-                "계속 번역할 수 있고, 새 논문은 내일 다시 번역할 수 있어요. 독해 표시는 그대로 볼 수 있어요.")
+        return (f"오늘은 새 논문 {PAPERS_PER_DAY}편까지 번역할 수 있습니다. 오늘 번역을 시작한 논문과 예전에 번역하던 논문은 "
+                "계속 번역할 수 있고, 새 논문은 내일 다시 번역할 수 있습니다. 독해 표시는 그대로 볼 수 있습니다.")
     used = (cur or {}).get("chars", 0)
     if used + chars > MAX_CHARS_PER_PAPER:
-        return (f"한 논문은 하루 {MAX_CHARS_PER_PAPER:,}자까지 번역할 수 있어요(오늘 이 논문 {used:,}자 사용, "
-                f"이번 {chars:,}자). 나머지는 내일 이어서 번역해 주세요.")
+        return (f"한 논문은 하루 {MAX_CHARS_PER_PAPER:,}자까지 번역할 수 있습니다(오늘 이 논문 {used:,}자 사용, "
+                f"이번 {chars:,}자). 나머지는 내일 이어서 번역해 주십시오.")
     return None
 
 
@@ -41,6 +41,6 @@ def add_user(day_usage: dict, doc_id: str, started_before: bool, chars: int) -> 
 
 def check_guest(used: int, chars: int) -> str | None:
     if used + chars > GUEST_CHARS:
-        return (f"로그인하지 않으면 번역을 맛보기로 {GUEST_CHARS:,}자까지(초록 한 편 정도) 쓸 수 있어요"
-                f"(지금 {used:,}자 사용, 이번 {chars:,}자). 오른쪽 위에서 로그인하면 하루에 논문 1편을 끝까지 번역할 수 있어요.")
+        return (f"로그인하지 않으면 번역을 맛보기로 {GUEST_CHARS:,}자까지(초록 한 편 정도) 쓸 수 있습니다"
+                f"(지금 {used:,}자 사용, 이번 {chars:,}자). 오른쪽 위에서 로그인하면 하루에 논문 1편을 끝까지 번역할 수 있습니다.")
     return None
