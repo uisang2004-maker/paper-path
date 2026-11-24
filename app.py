@@ -519,6 +519,41 @@ TOUR_JS = """<script>
 </script>"""
 
 
+# 표시 설명창(.pp-m::after)은 단어 왼쪽에 맞춰 뜨므로, 화면 오른쪽 끝 단어(휴대폰에서는 대부분)는 설명창이 화면 밖으로
+# 잘렸다. CSS만으로는 단어가 화면 어디에 있는지 알 수 없어, 설명창이 뜰 때 폭을 재어 넘치는 만큼만 안쪽으로 민다.
+TIP_FIT_CORE = """(function () {
+  if (window.__ppTipFit) return; window.__ppTipFit = true;
+  const GAP = 12;
+  function fit(e) {
+    const m = e.target && e.target.closest && e.target.closest(".pp-m[data-tip]");
+    if (!m) return;
+    m.style.removeProperty("--tip-dx");
+    requestAnimationFrame(function () {
+      const cs = getComputedStyle(m, "::after");
+      if (!cs.content || cs.content === "none") return;
+      const w = parseFloat(cs.width) + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const r = m.getClientRects()[0] || m.getBoundingClientRect();
+      const vw = document.documentElement.clientWidth, start = r.left + (parseFloat(cs.left) || 0);
+      let dx = 0;
+      if (start + w > vw - GAP) dx = vw - GAP - (start + w);
+      if (start + dx < GAP) dx = GAP - start;
+      if (dx) m.style.setProperty("--tip-dx", Math.round(dx) + "px");
+    });
+  }
+  document.addEventListener("mouseover", fit, true);
+  document.addEventListener("focusin", fit, true);
+})();"""
+
+
+def tip_fit() -> None:
+    """설명창 위치 맞추기 코드를 앱 화면에 한 번 심는다(화면이 다시 그려져도 부모 문서에 남는다)."""
+    ss = st.session_state
+    if ss.get("tip_fit_on"):
+        return
+    ss.tip_fit_on = True
+    components.html(TOUR_JS.replace("__CODE__", json.dumps(TIP_FIT_CORE)), height=0)
+
+
 def open_tutorial() -> None:
     st.session_state.tour_pending = True
 
@@ -2619,6 +2654,7 @@ def main() -> None:
         rules_page()
     else:
         validation_page()
+    tip_fit()
 
 
 main()
