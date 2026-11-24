@@ -39,7 +39,7 @@ class ArxivError(Exception):
 def normalize_id(raw: str) -> str:
     m = P.ARXIV_ID.match(raw or "")
     if not m:
-        raise ArxivError("arXiv ID 형식이 아니에요. 예: 2402.08910 또는 arXiv:2402.08910v2")
+        raise ArxivError("arXiv ID 형식이 아닙니다. 예: 2402.08910 또는 arXiv:2402.08910v2")
     return m.group("id")
 
 
@@ -95,13 +95,13 @@ def fetch_abstract(raw_id: str, use_cache: bool = True) -> dict:
     try:
         rows = _parse_entries(_get({"id_list": arxiv_id, "max_results": 1}))
     except urllib.error.HTTPError as e:
-        raise ArxivError(f"arXiv 서버가 요청을 거절했어요(HTTP {e.code}). 잠시 뒤 다시 시도하세요.") from e
+        raise ArxivError(f"arXiv 서버가 요청을 거절했습니다(HTTP {e.code}). 잠시 뒤 다시 시도하십시오.") from e
     except (urllib.error.URLError, TimeoutError, OSError) as e:
-        raise ArxivError("arXiv에 연결하지 못했어요. 인터넷 연결을 확인하거나 텍스트 붙여 넣기를 쓰세요.") from e
+        raise ArxivError("arXiv에 연결하지 못했습니다. 인터넷 연결을 확인하거나 텍스트 붙여 넣기를 쓰십시오.") from e
     except ET.ParseError as e:
-        raise ArxivError("arXiv 응답을 읽지 못했어요.") from e
+        raise ArxivError("arXiv 응답을 읽지 못했습니다.") from e
     if not rows:
-        raise ArxivError(f"arXiv에서 {arxiv_id} 논문을 찾지 못했어요.")
+        raise ArxivError(f"arXiv에서 {arxiv_id} 논문을 찾지 못했습니다.")
     row = rows[0]
     cache[arxiv_id] = row
     _save_cache(cache)

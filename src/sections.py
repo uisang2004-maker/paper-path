@@ -186,7 +186,7 @@ def _front_abstract(sections: list[Section], front: list[list[str]], notes: list
     if len(text) < ABSTRACT_MIN_CHARS or len(re.findall(r"[.!?](?:\s|$)", text)) < ABSTRACT_MIN_SENTS:
         return
     sections.insert(0, Section("Abstract", paras=kept))
-    notes.append("'Abstract' 표시가 없어 첫 절 바로 앞의 긴 글을 초록으로 보여 줘요.")
+    notes.append("'Abstract' 표시가 없어 첫 절 바로 앞의 긴 글을 초록으로 보여 줍니다.")
 
 
 def _caps_heading(line: str) -> bool:
@@ -304,7 +304,7 @@ def _split(lines: list[str], title: str, use_font: bool) -> Paper:
         if para:
             cur.paras.append(para)
         sections = [cur]
-        notes.append("절 제목을 찾지 못해 전체를 한 덩어리로 보여 줘요(이메일·소속 문단은 뺐지만 저자 이름이 섞일 수 있어요).")
+        notes.append("절 제목을 찾지 못해 전체를 한 덩어리로 보여 줍니다(이메일·소속 문단은 뺐지만 저자 이름이 섞일 수 있습니다).")
 
     for s in sections:
         # 초록을 통째로 작은 글자로 쓰는 형식(IEEE)만 작은 글자를 남긴다. 섞여 있으면 작은 쪽은 각주로 본다

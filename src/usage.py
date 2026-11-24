@@ -64,7 +64,7 @@ def check_batch(chunk_chars: list[int], session_calls: int, path: Path | None = 
     if reason:
         return reason
     if used_today(path) + sum(chunk_chars) > LIMITS[engine].daily:
-        return "오늘 사이트 전체의 번역 한도에 도달했어요. 내일 다시 시도해 주세요. 독해 표시는 그대로 볼 수 있어요."
+        return "오늘 사이트 전체의 번역 한도에 도달했습니다. 내일 다시 시도해 주십시오. 독해 표시는 그대로 볼 수 있습니다."
     return None
 
 
@@ -74,10 +74,10 @@ def check(chars: int, session_calls: int, path: Path | None = None, engine: str 
     per_request=False는 단어 뜻 풀이처럼 한 번에 보내는 글 길이를 따로 정해 둔 요청(한 번 한도는 보지 않음)."""
     lim = LIMITS[engine]
     if per_request and chars > lim.per_request:
-        return (f"번역은 한 번에 {lim.per_request:,}자까지만 할 수 있어요(지금 {chars:,}자). "
-                "초록이나 단락 하나씩 넣어 주세요. 독해 표시는 그대로 볼 수 있어요.")
+        return (f"번역은 한 번에 {lim.per_request:,}자까지만 할 수 있습니다(지금 {chars:,}자). "
+                "초록이나 단락 하나씩 넣어 주십시오. 독해 표시는 그대로 볼 수 있습니다.")
     if session_calls >= lim.per_session:
-        return f"이 화면에서는 번역을 {lim.per_session}번까지 쓸 수 있어요. 새로고침하면 다시 쓸 수 있어요."
+        return f"이 화면에서는 번역을 {lim.per_session}번까지 쓸 수 있습니다. 새로고침하면 다시 쓸 수 있습니다."
     if used_today(path) + chars > lim.daily:
-        return "오늘 사이트 전체의 번역 한도에 도달했어요. 내일 다시 시도해 주세요. 독해 표시는 그대로 볼 수 있어요."
+        return "오늘 사이트 전체의 번역 한도에 도달했습니다. 내일 다시 시도해 주십시오. 독해 표시는 그대로 볼 수 있습니다."
     return None

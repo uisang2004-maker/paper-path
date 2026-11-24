@@ -65,17 +65,17 @@ DEMO_TEXT = (
 RULE_DEMO = "The method may be applied to images, and the results suggest a gain over BERT [4]."
 
 KIND_META = {
-    "problem": ("문제 · Problem", "blue"),
-    "method": ("방법 · Method", "teal"),
-    "result": ("결과 · Result", "violet"),
+    "problem": ("문제", "blue"),
+    "method": ("방법", "teal"),
+    "result": ("결과", "violet"),
 }
-BASIS_TEXT = {"signal": "신호 문구로 찾음", "position": "위치로 추정", "none": "찾지 못함"}
-MARK_LABEL = {"abbr": "약어", "abbr-missing": "약어(정의 없음)", "hedge": "추측·가능성", "confident": "확신", "reference": "참조",
-              "definition": "용어 설명·예시", "number": "수치 근거", "term": "반복 용어", "jargon": "어려운 단어"}
+BASIS_TEXT = {"signal": "신호 문구", "position": "위치 추정", "none": "없음"}
+MARK_LABEL = {"abbr": "약어", "abbr-missing": "약어", "hedge": "추측·가능성", "confident": "확신", "reference": "참조",
+              "definition": "용어 설명", "number": "수치 근거", "term": "반복 용어", "jargon": "어려운 단어"}
 CAT_RULE = {"abbr": "ABBR", "abbr-missing": "ABBR", "hedge": "HEDGE", "confident": "CONFIDENT", "reference": "REFERENCE",
             "definition": "DEFINITION", "number": "NUMBER", "term": "TERM", "jargon": "JARGON"}
-UL_TITLE = {"problem": "핵심 내용(밑줄) · 무엇이 어려운가", "method": "핵심 내용(밑줄) · 무엇을 만들었나",
-            "result": "핵심 내용(밑줄) · 무엇을 발견했나", "def": "용어 설명(점선 밑줄)"}
+UL_TITLE = {"problem": "무엇이 어려운지 밝힌 부분", "method": "무엇을 만들었는지 밝힌 부분",
+            "result": "무엇을 발견했는지 밝힌 부분", "def": "용어 설명"}
 
 ICON = {
     "doc": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>',
@@ -163,7 +163,7 @@ def set_view() -> None:
     secs = [ss.paper.sections[i] for i in ids]
     ss.input_text = "\n\n".join(s.text for s in secs)        # 결론 쪽은 Discussion·Conclusion을 이어 붙인다
     label = page if page != "본문" else f"본문 › {secs[0].title}"
-    if page != "본문":
+    if page != "본문" and (len(secs) > 1 or page != "초록"):
         label += " (" + ", ".join(s.title for s in secs) + ")"
     ss.source = {**ss.source, "section": label, "section_ids": ids, "page": page}
 
@@ -197,7 +197,7 @@ def loaded_bar(a) -> None:
         with c4.popover("약어·단어·규칙", icon=":material/menu_book:", use_container_width=True):
             reading_helper(a)
         c5.button("사용법", key="tut_open", icon=":material/help:", on_click=open_tutorial, use_container_width=True,
-                  help="화면을 하나씩 짚어 가며 기능을 알려 줘요")   # 스크롤해도 늘 보이게 위 막대에
+                  help="화면을 하나씩 짚어 가며 기능을 알려 줍니다")   # 스크롤해도 늘 보이게 위 막대에
         c1.markdown(f'<div class="pp-loaded"><span class="pp-loaded-label">지금 읽는 자료</span>'
                     f'<span class="pp-loaded-src">{esc(source_flag())}</span>'
                     f'<a class="pp-jump" href="#pp-03">03 자료로 ↓</a></div>', unsafe_allow_html=True)
@@ -206,9 +206,9 @@ def loaded_bar(a) -> None:
         c3.download_button("결과 파일 내려받기", SV.to_file(items, ss.source.get("title", ""), ss.browser_docs),
                            file_name="paperpath_results.json", mime="application/json", key="saved_dl",
                            icon=":material/download:", use_container_width=True, disabled=not items,
-                           help="번역·뜻 풀이 결과를 파일로 받아요. 다른 PC에서 '결과 파일 불러오기'로 넣으면 다시 번역하지 않아요.")
+                           help="번역·뜻 풀이 결과를 파일로 받습니다. 다른 PC에서 '결과 파일 불러오기'로 넣으면 다시 번역하지 않습니다.")
         c2.button("다시 넣기", key="reinput_btn", icon=":material/upload_file:", use_container_width=True,
-                  on_click=set_show_input, args=(True,), help="다른 PDF·arXiv ID·텍스트를 넣어요")
+                  on_click=set_show_input, args=(True,), help="다른 PDF·arXiv ID·텍스트를 넣습니다")
         # 논문을 어디까지 읽었는지: 막대 아래 가는 진행선(초록 → 본문 절 → 결론). PDF 논문일 때만
         stops = reading_stops()
         at = stop_now(stops) if stops else None
@@ -232,7 +232,7 @@ def reading_helper(a) -> None:
     if a.acronyms:
         st.markdown("\n".join(f"- **{k}** → {v or '이 글에서 정의를 찾지 못함'}" for k, v in a.acronyms.items()))
     else:
-        st.caption("이 글에는 약어가 없어요.")
+        st.caption("이 글에는 약어가 없습니다.")
     st.markdown(f"**어려운 단어** · {len(rows)}개")
     if rows:
         lines = []
@@ -240,9 +240,9 @@ def reading_helper(a) -> None:
             mean = e.ai_meaning or (e.explanation if e.explanation and "정의를 찾지" not in e.explanation else "") or e.korean
             lines.append(f"- **{e.term}**" + (f" — {mean}" if mean else ""))
         st.markdown("\n".join(lines))
-        st.caption("전체 목록은 아래 '03 이해를 돕는 자료 → 어려운 단어' 탭에 있어요. 뜻은 참고용이에요.")
+        st.caption("전체 목록은 아래 '03 이해를 돕는 자료 → 어려운 단어' 탭에 있습니다. 뜻은 참고용입니다.")
     else:
-        st.caption("이 글에는 한국어로 옮겨도 안 풀릴 전문용어가 없어요.")
+        st.caption("이 글에는 한국어로 옮겨도 안 풀릴 전문용어가 없습니다.")
     rule_summary(a)
 
 
@@ -256,12 +256,12 @@ def rule_summary(a) -> None:
             lst.append(phrase)
     st.markdown(f"**규칙 근거** · {sum(len(v) for v in groups.values())}개 표현")
     if not groups:
-        st.caption("이 글에서 걸린 규칙이 없어요.")
+        st.caption("이 글에서 걸린 규칙이 없습니다.")
         return
     order = [c for c in MARK_LABEL if c in groups]
     st.markdown("\n".join(f"- **{MARK_LABEL[c]}** `{CAT_RULE[c]}` · {len(groups[c])}개 — "
                           + ", ".join(f"_{x[:30]}_" for x in groups[c][:2]) for c in order))
-    st.caption("각 규칙의 정규식·예시·일부러 놓치는 경우는 위 '규칙 탐색' 탭에 있어요.")
+    st.caption("각 규칙의 정규식·예시·일부러 놓치는 경우는 위 '규칙 탐색' 탭에 있습니다.")
 
 
 DOC_CARDS_PER_ROW = 3
@@ -291,19 +291,19 @@ def saved_panel() -> None:
     ss = st.session_state
     n = len(ss.browser_keys)
     docs = sorted(ss.browser_docs.values(), key=lambda d: -d.get("ts", 0))
-    label = f"저장된 문서 {len(docs)}개 · 번역된 글 {n}개" if docs or n else "저장된 문서 · 결과 파일 불러오기"
+    label = f"저장된 문서 {len(docs)}개 · 번역된 글 {n}개" if docs or n else "저장된 문서와 결과 파일"
     with st.expander(label, expanded=bool(docs)):
         if current_user():
-            st.caption("로그인 중: 읽은 문서(절 글자)와 번역·뜻 풀이 결과가 이 브라우저와 **내 계정**에 저장돼요. 다른 PC에서도 "
-                       "로그인하면 '다시 열기'로 이어 볼 수 있어요. 이메일·이름·PDF 파일·표 이미지는 저장하지 않아요.")
+            st.caption("로그인 중: 읽은 문서(절 글자)와 번역·뜻 풀이 결과가 이 브라우저와 **내 계정**에 저장됩니다. 다른 PC에서도 "
+                       "로그인하면 '다시 열기'로 이어 볼 수 있습니다. 이메일·이름·PDF 파일·표 이미지는 저장하지 않습니다.")
         else:
-            st.caption("읽은 문서와 번역·뜻 풀이 결과는 이 브라우저에만 저장돼요(서버에는 저장하지 않음). '다시 열기'를 누르면 "
-                       "PDF를 다시 넣지 않아도 바로 열리고, 번역한 부분은 API 없이 보여요. 다른 PC에서는 결과 파일을 불러오세요"
-                       + (" (로그인하면 다른 PC에서도 이어 볼 수 있어요)." if auth_ready() else "."))
+            st.caption("읽은 문서와 번역은 이 브라우저에 저장됩니다. '다시 열기'를 누르면 PDF 없이 바로 열립니다. "
+                       "다른 PC에서는 결과 파일을 불러오십시오"
+                       + (" (로그인하면 다른 PC에서도 이어 볼 수 있습니다)." if auth_ready() else "."))
         if ss.get("account_msg"):
             st.warning(ss.account_msg)
         elif current_user():
-            st.caption(f"내 계정 동기화: 문서 {len(ss.account_docs)}개 · 번역·뜻 풀이 글 {len(ss.account_sig)}개가 계정에 있어요.")
+            st.caption(f"내 계정 동기화: 문서 {len(ss.account_docs)}개 · 번역·뜻 풀이 글 {len(ss.account_sig)}개가 계정에 있습니다.")
         shown_docs = docs[:SV.MAX_DOCS]
         for row in range(0, len(shown_docs), DOC_CARDS_PER_ROW):   # 한 줄에 카드 3장: 대표 그림 · 제목 · 진행 · 지난 위치
             cols = st.columns(DOC_CARDS_PER_ROW)
@@ -373,8 +373,8 @@ def open_doc(doc_id: str) -> None:
     ss.paper_tables, ss.paper_figures = [], []
     if rec["kind"] == "pdf":
         paper = paper_from_doc(rec)
-        if "표·그림은 PDF를 다시 넣으면 보여요." not in paper.notes:
-            paper.notes.append("표·그림은 PDF를 다시 넣으면 보여요.")
+        if "표·그림은 PDF를 다시 넣으면 보입니다." not in paper.notes:
+            paper.notes.append("표·그림은 PDF를 다시 넣으면 보입니다.")
         ss.paper = paper
         ss.paper_page_count = None                 # 다시 연 문서는 PDF 쪽 수를 모른다(앞 PDF의 쪽 수가 남지 않게)
         ss.paper_cur, ss.body_cur = PAPER_PAGES[0], 0
@@ -397,25 +397,25 @@ def open_doc(doc_id: str) -> None:
 TOUR_STEPS = (
     # (가리킬 화면 요소 CSS 선택자, 제목, 설명) — 실제 화면 위에서 하나씩 강조하며 보여 준다
     (".st-key-card_row", "먼저 읽을 3줄 뼈대",
-     "이 글의 <b>문제 · 방법 · 결과</b> 문장이에요. 정규식이 신호 문구(<i>we propose</i>, <i>results show</i>…)로 찾았고, "
-     "진한 밑줄은 그 문장의 핵심 내용이에요. 오른쪽 위 '신호 문구로 찾음 / 위치로 추정'은 근거가 얼마나 확실한지예요."),
-    (".st-key-chip_row", "형광펜 켜고 끄기",
-     "색마다 뜻이 있어요: <b>파랑</b> 약어·용어 설명, <b>노랑</b> 추측·가능성, <b>초록</b> 확신·수치, <b>보라</b> 참조, "
-     "보라 <b>점선</b> 어려운 단어. 칩을 누르면 그 표시만 꺼지고, 다시 누르면 켜져요."),
-    (".pp-sents .pp-m", "마우스를 올려 보세요",
-     "표시된 말에 마우스를 올리면(휴대폰은 누르면) <b>뜻 · 규칙 · 이 글에 나온 횟수</b>가 떠요. 'Table 2'·'Fig. 3'에 올리면 "
-     "표·그림 미리보기가 뜨고, 한국어 번역 쪽에도 같은 설명이 떠요."),
+     "이 글의 <b>문제, 방법, 결과</b> 문장입니다. 정규식이 신호 문구(<i>we propose</i>, <i>results show</i>…)로 찾았고, "
+     "진한 밑줄은 그 문장의 핵심 내용입니다. 오른쪽 위의 '신호 문구로 찾음'은 확실한 문장이고, '추정'이 붙은 것은 위치로 고른 문장입니다."),
+    (".st-key-chip_row", "표시 켜고 끄기",
+     "색마다 뜻이 있습니다: <b>파랑</b> 약어·용어 설명, <b>노랑</b> 추측·가능성, <b>초록</b> 확신·수치, <b>보라</b> 참조, "
+     "보라 <b>점선</b> 어려운 단어. 칩을 누르면 그 표시만 꺼지고, 다시 누르면 켜집니다."),
+    (".pp-sents .pp-m", "마우스를 올려 보십시오",
+     "표시된 말에 마우스를 올리면(휴대폰은 누르면) <b>뜻 · 규칙 · 이 글에 나온 횟수</b>가 뜹니다. 'Table 2'·'Fig. 3'에 올리면 "
+     "표·그림 미리보기가 뜨고, 한국어 번역 쪽에도 같은 설명이 뜹니다."),
     (".st-key-read_mode_bar", "읽기 모드",
-     "<b>한영 나란히 · 문장마다 한영 · 영어만 · 한국어만</b> 중에서 골라요. 번역하기를 누르면 문장마다 한국어가 붙어요 "
+     "<b>한영 나란히 · 문장마다 한영 · 영어만 · 한국어만</b> 중에서 고릅니다. 번역하기를 누르면 문장마다 한국어가 붙습니다 "
      "(AI 번역, 참고용)."),
     (".st-key-part_bar", "긴 절은 나눠 읽기",
-     "40문장이 넘는 절은 <b>소제목 단위</b>로 나뉘어요. 여기서 고르거나 글 아래 <b>◀ 이전 · 다음 ▶</b>으로 넘겨요."),
+     "40문장이 넘는 절은 <b>소제목 단위</b>로 나뉩니다. 여기서 고르거나 글 아래 <b>◀ 이전 · 다음 ▶</b>으로 넘깁니다."),
     (".st-key-loaded_bar [data-testid='stPopover']", "약어·단어·규칙",
-     "스크롤 위치와 상관없이 이 글의 <b>약어 · 어려운 단어 · 걸린 규칙</b>을 바로 펼쳐 볼 수 있어요. "
-     "전체 단어표와 흐름도는 맨 아래 <b>03</b>에 있어요."),
+     "스크롤 위치와 상관없이 이 글의 <b>약어 · 어려운 단어 · 걸린 규칙</b>을 바로 펼쳐 볼 수 있습니다. "
+     "전체 단어표와 흐름도는 맨 아래 <b>03</b>에 있습니다."),
     (".st-key-tut_open", "언제든 다시 보기",
-     "읽던 곳은 자동으로 저장돼서 다음에 '저장된 문서'에서 <b>이어서 보기</b>를 고를 수 있어요. "
-     "이 안내는 위 막대의 <b>'사용법'</b>으로 언제든 다시 볼 수 있어요."),
+     "읽던 곳은 자동으로 저장돼서 다음에 '저장된 문서'에서 <b>이어서 보기</b>를 고를 수 있습니다. "
+     "이 안내는 위 막대의 <b>'사용법'</b>으로 언제든 다시 볼 수 있습니다."),
 )
 
 TOUR_CORE = r"""
@@ -569,14 +569,14 @@ def dismiss_resume() -> None:
 
 
 def resume_prompt() -> None:
-    """다시 연 문서에 지난 위치가 있으면 맨 위에 '이어서 보시겠어요?'(스크롤 위치는 기억하지 못해 그 부분의 처음으로)."""
+    """다시 연 문서에 지난 위치가 있으면 맨 위에 '이어서 보시겠습니까?'(스크롤 위치는 기억하지 못해 그 부분의 처음으로)."""
     last = st.session_state.get("resume_offer")
     if not last:
         return
     with st.container(key="resume_box"):
         c1, c2, c3 = st.columns([4, 1.1, 0.9], vertical_alignment="center")
-        c1.markdown(f'<div class="pp-resume">지난번에 <b>{esc(last.get("label") or "본문")}</b>까지 읽었어요. '
-                    f'이어서 보시겠어요?</div>', unsafe_allow_html=True)
+        c1.markdown(f'<div class="pp-resume">지난번에 <b>{esc(last.get("label") or "본문")}</b>까지 읽었습니다. '
+                    f'이어서 보시겠습니까?</div>', unsafe_allow_html=True)
         c2.button("이어서 보기", key="resume_yes", type="primary", on_click=resume_reading, use_container_width=True)
         c3.button("처음부터", key="resume_no", on_click=dismiss_resume, use_container_width=True)
 
@@ -635,14 +635,14 @@ def on_saved_upload() -> None:
         remember_doc(rec)
     ss.input_error = None
     n = len({k for k, _ in tr} | set(gl))
-    ss.saved_msg = (f"결과 {n}개 글과 문서 {len(docs)}개를 불러왔어요. 아래 '다시 열기'를 누르거나 같은 PDF를 넣으면 "
-                    "저장된 번역으로 바로 열려요.")
+    ss.saved_msg = (f"결과 {n}개 글과 문서 {len(docs)}개를 불러왔습니다. 아래 '다시 열기'를 누르거나 같은 PDF를 넣으면 "
+                    "저장된 번역으로 바로 열립니다.")
 
 
 def clear_browser() -> None:
     ss = st.session_state
     ss.browser_clear = True
-    ss.saved_msg = "이 브라우저에 저장된 번역을 지웠어요(지금 화면의 결과는 새로고침하면 사라져요)."
+    ss.saved_msg = "이 브라우저에 저장된 번역을 지웠습니다(지금 화면의 결과는 새로고침하면 사라집니다)."
 
 
 def browser_sync() -> None:
@@ -726,14 +726,14 @@ def load_pdf(data: bytes, name: str) -> str | None:
     """PDF → 절 나누기. 실패하면 화면에 보여 줄 이유를 돌려준다."""
     ss = st.session_state
     if len(data) > MAX_PDF_MB * 1024 * 1024:
-        return f"PDF가 너무 커요({len(data) / 1024 / 1024:.1f}MB). {MAX_PDF_MB}MB 이하만 올릴 수 있어요."
+        return f"PDF가 너무 큽니다({len(data) / 1024 / 1024:.1f}MB). {MAX_PDF_MB}MB 이하만 올릴 수 있습니다."
     try:
         pdf = extract_pdf(data)
     except PdfError as e:
         return str(e)
     paper = split_paper(pdf.lines, pdf.title or name)
     if not paper.sections:
-        return "PDF에서 본문을 찾지 못했어요."
+        return "PDF에서 본문을 찾지 못했습니다."
     try:
         ss.paper_tables = find_tables(data)       # 표 캡션(정규식) + 가로선으로 자른 표 이미지
     except Exception:                            # 표 찾기가 실패해도 본문 분석은 그대로 보여 준다
@@ -742,7 +742,7 @@ def load_pdf(data: bytes, name: str) -> str | None:
         ss.paper_figures = find_figures(data)     # 그림 캡션(정규식) + 캡션 위 그림 영역
     except Exception:
         ss.paper_figures = []
-    paper.notes = [f"PDF {pdf.read_pages}쪽을 읽었어요" + (f"(2단 편집 {pdf.two_column_pages}쪽은 왼쪽 단 → 오른쪽 단 순서로)"
+    paper.notes = [f"PDF {pdf.read_pages}쪽을 읽었습니다" + (f"(2단 편집 {pdf.two_column_pages}쪽은 왼쪽 단 → 오른쪽 단 순서로)"
                                                        if pdf.two_column_pages else "") + "."] + pdf.notes + paper.notes
     ss.paper_page_count = pdf.read_pages          # 00 제목 줄에 'n쪽'으로(자세한 안내는 ⓘ에)
     ss.paper = paper
@@ -783,7 +783,7 @@ def mark_chips(a) -> None:
     full["jargon"] = len({m.tip.split(":")[0] for m in hard_marks(a)})                   # 어려운 단어 가짓수
     opts = [k for k, _, _ in CHIPS if full[k]]
     if not opts:
-        st.markdown('<div class="pp-chips"><span class="pp-meta">표시할 표현이 없어요</span></div>', unsafe_allow_html=True)
+        st.markdown('<div class="pp-chips"><span class="pp-meta">표시할 표현이 없습니다</span></div>', unsafe_allow_html=True)
         return
     # 칩이 곧 범례: 본문에서 마커로 칠하는 표시는 이름에 같은 마커(배경색 → CSS가 마커 획으로), 밑줄 표시(반복 용어 실선,
     # 어려운 단어 점선)는 이름에 같은 밑줄(글자색 → CSS가 밑줄로). 끈 칩은 CSS가 표시를 지운다
@@ -791,15 +791,15 @@ def mark_chips(a) -> None:
     label = {k: (f":{under[k]}[{name}] {full[k]}" if k in under else f":{CHIP_COLOR[color]}-background[{name}] {full[k]}")
              for k, name, color in CHIPS}
     ss.mark_pills = [k for k in opts if CHIP_RULE[k] in ss.active_rules]   # 규칙 체크박스와 같은 상태를 쓴다
-    st.pills("형광펜 켜고 끄기", opts, selection_mode="multi", format_func=label.get, key="mark_pills",
+    st.pills("표시 켜고 끄기", opts, selection_mode="multi", format_func=label.get, key="mark_pills",
              on_change=on_chip_change, args=(tuple(opts),), label_visibility="collapsed",
-             help="누르면 그 표시의 형광펜을 끄고, 다시 누르면 켜요")
+             help="누르면 그 표시의 형광펜을 끄고, 다시 누르면 켭니다")
     # 표시를 하나씩 끄지 않고 한 번에: 깨끗한 원문만 읽다가 다시 한 번에 켠다(끄기 전 고른 칩을 기억)
     any_on = bool(ss.mark_pills)
     st.button("표시 모두 끄기" if any_on else "표시 다시 켜기", key="marks_all", type="tertiary",
               icon=":material/ink_eraser:" if any_on else ":material/ink_highlighter:",
               on_click=toggle_all_marks, args=(tuple(opts), any_on),
-              help="형광펜·밑줄 표시를 한 번에 끄고 원문만 봐요" if any_on else "끄기 전 켜 두었던 표시를 다시 켜요")
+              help="형광펜·밑줄 표시를 한 번에 끄고 원문만 봅니다" if any_on else "끄기 전 켜 두었던 표시를 다시 켭니다")
 
 
 def toggle_all_marks(opts: tuple, turn_off: bool) -> None:
@@ -858,7 +858,7 @@ def read_settings() -> None:
     with st.popover("읽기 설정", icon=":material/tune:", use_container_width=True,   # 이름이 바뀌면 창이 닫히므로 고정
                     help="글자 크기·글꼴·줄 간격을 눈이 편하게"):
         st.slider("영어 원문 글자 크기(px)", READ_PX_MIN, READ_PX_MAX, step=1, key="read_px",
-                  on_change=on_read_pref, args=("read_px",), help="한국어 번역과 3줄 뼈대 인용도 같은 비율로 바뀌어요")
+                  on_change=on_read_pref, args=("read_px",), help="한국어 번역과 3줄 뼈대 인용도 같은 비율로 바뀝니다")
         st.segmented_control("영어 원문 글꼴", READ_FONTS_EN, key="read_font_en", format_func=READ_FONT_EN_LABEL.get,
                              on_change=on_read_pref, args=("read_font_en",))
         st.segmented_control("한국어 번역 글꼴", READ_FONTS_KO, key="read_font_ko", format_func=READ_FONT_KO_LABEL.get,
@@ -960,7 +960,7 @@ def render_layers(text: str, spans, underline=None) -> str:
 
 def render_ko(ko: str, ko_marks, active, underline=None, en_tips: dict | None = None, pop=None) -> str:
     """번역문 형광펜·밑줄. 툴팁은 영어 원문의 같은 표시와 같은 설명(뜻·규칙)을 보여 주고,
-    위치는 번역기가 옮긴 태그에서 복원한 것이라 '영어 ○○에 대응'을 덧붙인다. pop=(표·그림 맥락, 문장 번호)."""
+    위치는 번역기가 옮긴 태그에서 복원한 것이라 '원문 ○○'을 덧붙인다. pop=(표·그림 맥락, 문장 번호)."""
     spans, last = [], -1
     for a, b, cat, en in ko_marks:
         if CAT_RULE.get(cat) in active and a >= last:
@@ -968,15 +968,15 @@ def render_ko(ko: str, ko_marks, active, underline=None, en_tips: dict | None = 
             extra = ""
             if cat == "reference" and pop and pop[0]:
                 _, extra = float_pop(en or "", pop[1], pop[0])
-            spans.append((a, b, f"pp-m {cat}", f"{tip} · 영어 '{en}'에 대응 (번역기가 옮긴 위치)", extra))
+            spans.append((a, b, f"pp-m {cat}", f"{tip} — 원문 '{en}'", extra))
             last = b
     return render_layers(ko, spans, underline)
 
 
 def mark_tip(m) -> str:
-    """표시 툴팁: '범주 · 설명'. 설명이 이미 범주 이름으로 시작하면(확신 · …) 두 번 쓰지 않는다."""
+    """표시 툴팁: '범주: 설명'. 설명이 이미 범주 이름으로 시작하면 두 번 쓰지 않는다."""
     label = MARK_LABEL[m.category]
-    return m.tip if m.tip.startswith(label) else f"{label} · {m.tip}"
+    return m.tip if m.tip.startswith(label) else f"{label}: {m.tip}"
 
 
 def en_tips(a, i: int) -> dict[tuple[str, str], str]:
@@ -1040,26 +1040,26 @@ def render_marked(text: str, start: int, end: int, marks, underline=None) -> str
 def term_tip(term: str, tip: str, tips: dict[str, str]) -> str:
     """반복 용어 툴팁: 뜻을 알면 뜻을 먼저, 모르면 뜻을 받는 방법을 알려 준다."""
     n = TIMES.search(tip)
-    times = f" · 이 글에 {n.group(1)}번" if n else ""
+    times = f" (이 글에 {n.group(1)}번)" if n else ""
     mean = tips.get(G.term_key(term))
     if mean:
         return f"{term}: {mean}{times}"
-    return f"{term}{times} · 뜻은 '번역하기'나 단어표의 'AI로 뜻 풀이 받기'를 누르면 여기에 떠요"
+    return f"{term}: 이 글에 {n.group(1)}번 나옵니다" if n else term
 
 
 def skeleton_card(card, a, ko: str | None = None, ko_ul=None) -> str:
     title, color = KIND_META[card.kind]
     basis_cls = card.basis
-    basis_tip = {"signal": "신호 문구로 찾은 문장이에요. 밑줄은 신호 문구가 가리키는 핵심 내용이에요.",
-                 "position": "신호 문구가 없어 위치로 고른 추정 문장이에요. 근거가 없어 핵심 내용 밑줄은 긋지 않아요.",
-                 "none": "규칙에 맞는 문장을 찾지 못했어요."}[card.basis]
+    basis_tip = {"signal": "신호 문구로 찾은 문장입니다. 밑줄은 신호 문구가 가리키는 핵심 내용입니다.",
+                 "position": "신호 문구가 없어 위치로 고른 추정 문장입니다. 근거가 없어 핵심 내용 밑줄은 긋지 않습니다.",
+                 "none": "규칙에 맞는 문장을 찾지 못했습니다."}[card.basis]
     reason = card.reason
     if card.sentence_idx is None:
         body, reason = missing_card_text(card, a)
         basis = BASIS_TEXT["none"]
     else:
         s = a.sentences[card.sentence_idx].text
-        spans = [(*card.signal, f"pp-sig-{color}", f"신호 문구 · {card.reason}")] if card.signal else []
+        spans = [(*card.signal, f"pp-sig-{color}", f"신호 문구: {card.reason}")] if card.signal else []
         ul = card_underlines(a).get(card.sentence_idx, [])
         body = (f'<div class="pp-sk-text"><span class="pp-sk-no">문장 {card.sentence_idx + 1}</span>'
                 f'{render_layers(s, spans, ul)}</div>')
@@ -1080,12 +1080,11 @@ def missing_card_text(card, a) -> tuple[str, str]:
     """찾지 못한 카드: 비어 보이지 않게 왜 없는지를 문장으로 알려 준다(지어낸 문장으로 채우지 않음)."""
     first_used = any(c.sentence_idx == 0 and c.kind != card.kind for c in a.skeleton)
     if card.kind == "problem" and first_used:
-        msg = "이 글은 문제를 따로 밝히지 않고 첫 문장부터 바로 방법을 소개해요."
+        msg = "이 글은 문제를 따로 밝히지 않고 첫 문장부터 바로 방법을 소개합니다."
     else:
-        msg = {"problem": "문제를 직접 밝힌 문장이 없어요.", "method": "방법을 소개하는 문장이 없어요.",
-               "result": "결과를 알리는 문장이 없어요."}[card.kind]
-    return (f'<div class="pp-sk-missing">{esc(msg)}</div>',
-            "지어낸 문장으로 채우지 않아요. 흐름도의 배경·보충 문장에서 맥락을 확인해 보세요.")
+        msg = {"problem": "문제를 직접 밝힌 문장이 없습니다.", "method": "방법을 소개하는 문장이 없습니다.",
+               "result": "결과를 말하는 문장이 없습니다."}[card.kind]
+    return (f'<div class="pp-sk-missing">{esc(msg)}</div>', "")
 
 
 ROLE_META = {"background": ("배경", "gray"), "problem": ("문제", "blue"), "method": ("방법", "teal"),
@@ -1122,7 +1121,7 @@ def flow_map(a, tr=None) -> str:
         steps.append(f'<div class="pp-flow-step {color}"><div class="pp-flow-head"><b>{name}</b>{nums}</div>'
                      f'<div class="pp-flow-text">{esc(snippet)}</div>{ko}</div>')
     if not steps:
-        return '<div class="pp-meta">문장이 없어요.</div>'
+        return '<div class="pp-meta">문장이 없습니다.</div>'
     detail = [i + 1 for i, r in enumerate(a.roles) if r == "detail"]
     note = ""   # 보충 문장 목록은 화면에서 뺐다(흐름 단계로 나누지 않은 문장 번호 나열이라 읽는 데 도움이 적었음)
     arrow = '<div class="pp-flow-arrow" aria-hidden="true">→</div>'
@@ -1138,14 +1137,14 @@ def names_line(a, rows) -> str:
     chips = "".join(f'<span class="pp-chip gray">{esc(n)}</span>' for n in names[:30])
     more = f' <span class="pp-meta">외 {len(names) - 30}개</span>' if len(names) > 30 else ""
     return (f'<div class="pp-names"><span class="pp-names-label">이 글에 나온 모델·데이터셋·기관 이름 {len(names)}개</span>'
-            f'<span class="pp-meta"> · 뜻을 풀 용어가 아니라 이름이라 단어표에서 뺐어요</span>'
+            f'<span class="pp-meta"> · 뜻을 풀 용어가 아니라 이름이라 단어표에서 뺐습니다</span>'
             f'<div class="pp-chips" style="margin-top:4px">{chips}{more}</div></div>')
 
 
 def glossary_table(rows) -> str:
     ai = any(e.ai_meaning for e in rows)
     if not rows:
-        return '<div class="pp-meta">이 글에는 한국어로 옮겨도 뜻이 안 풀릴 전문용어가 없어요.</div>'
+        return '<div class="pp-meta">이 글에는 한국어로 옮겨도 뜻이 안 풀릴 전문용어가 없습니다.</div>'
     body = "".join(
         f"<tr><td><b>{esc(e.term)}</b></td><td>{esc(', '.join(G.KIND_LABEL[k] for k in e.kinds))}</td>"
         f"<td>{esc(e.level)}</td>"
@@ -1181,7 +1180,7 @@ def paper_overview(paper) -> None:
         st.segmented_control("쪽", list(pages), format_func=labels.get, key="paper_page", on_change=on_page_change,
                              label_visibility="collapsed")
         if "결론" not in pages:
-            st.caption("결론·논의 절 제목을 찾지 못해 '결론' 쪽이 없어요. 마지막 본문 절을 확인해 보세요.")
+            st.caption("결론·논의 절 제목을 찾지 못해 '결론' 쪽이 없습니다. 마지막 본문 절을 확인해 보십시오.")
         if ss.source.get("page") == "본문":
             body = pages["본문"]
             ss.setdefault("section_pick", ss.body_cur)
@@ -1203,17 +1202,17 @@ def paper_overview(paper) -> None:
     tables = ss.get("paper_tables") or []
     figures = ss.get("paper_figures") or []
     # 펼침 칸 셋을 하나로 묶어(안은 탭) 01 뼈대 카드가 첫 화면에 들어오게 한다
-    with st.expander(f"논문 전체 보기 · 절별 지도 · 표 {len(tables)}개·그림 {len(figures)}개 · 전체 단어표"):
-        st.caption("참고문헌·부록·각주·그림/표 안 글자·저자 정보는 분석에서 뺐어요.")
+    with st.expander(f"논문 전체 보기 (표 {len(tables)}개, 그림 {len(figures)}개)"):
+        st.caption("참고문헌, 부록, 각주, 저자 정보는 분석하지 않습니다.")
         tab_map, tab_fl, tab_gl = st.tabs(["절별 지도", f"표·그림 {len(tables) + len(figures)}", "전체 단어표"])
     with tab_map:
         st.markdown(f'<div class="pp-panel" style="padding:6px 8px; overflow-x:auto"><table class="pp-table pp-overview">'
                     f'<thead><tr><th>절</th><th>문장</th><th>신호 문구로 찾은 핵심 문장</th><th>소제목</th></tr></thead>'
                     f'<tbody>{"".join(rows)}</tbody></table></div>', unsafe_allow_html=True)
     with tab_fl:
-        st.caption("본문을 읽을 때는 표·그림을 처음 언급한 문장 바로 아래에 넣어 보여 줘요. 여기는 전체 목록이에요.")
+        st.caption("본문을 읽을 때는 표·그림을 처음 언급한 문장 바로 아래에 넣어 보여 줍니다. 여기는 전체 목록입니다.")
         if not tables and not figures:
-            st.caption("'Table 1:'·'Figure 1:'처럼 시작하는 설명(캡션)을 찾지 못했어요.")
+            st.caption("'Table 1:'·'Figure 1:'처럼 시작하는 설명(캡션)을 찾지 못했습니다.")
         for t in tables + figures:
             table_card(t, "all")
     with tab_gl:
@@ -1223,7 +1222,7 @@ def paper_overview(paper) -> None:
                            mime="text/csv", key="paper_glossary_csv", disabled=not entries)
         st.markdown(glossary_table(entries), unsafe_allow_html=True)
         st.markdown(names_line(whole, entries), unsafe_allow_html=True)
-        st.caption("'처음 나온 곳'은 모든 절을 이어 붙였을 때의 문장 번호예요. 한국어 대응어는 절마다 번역했을 때 그 절의 단어표에 나와요.")
+        st.caption("'처음 나온 곳'은 모든 절을 이어 붙였을 때의 문장 번호입니다. 한국어 대응어는 절마다 번역했을 때 그 절의 단어표에 나옵니다.")
 
 
 def info_tip(text: str) -> str:
@@ -1270,10 +1269,10 @@ def topbar() -> None:
             except Exception:
                 name = "로그인됨"
             s2.button("로그아웃", key="logout_btn", on_click=st.logout, use_container_width=True,
-                      help=f"{name} · 내 계정 기록은 남아요")
+                      help=f"{name} · 내 계정 기록은 남습니다")
         else:
             s2.button("로그인", key="login_btn", on_click=st.login, icon=":material/login:", use_container_width=True,
-                      help="Google 계정으로 로그인하면(선택) 번역 결과가 내 계정에 저장돼 다른 PC에서도 이어 볼 수 있어요")
+                      help="Google 계정으로 로그인하면(선택) 번역 결과가 내 계정에 저장돼 다른 PC에서도 이어 볼 수 있습니다")
 
 
 def clip(s: str, n: int) -> str:
@@ -1288,13 +1287,13 @@ def clip(s: str, n: int) -> str:
 def source_flag() -> str:
     src = st.session_state.source
     if src["kind"] == "none":
-        return "아직 넣은 자료가 없어요"
+        return "아직 넣은 자료가 없습니다"
     if src["kind"] == "demo":
         return "화면 예시 데이터 · 직접 작성, 실제 논문 아님"
     if src["kind"] == "arxiv":
         return f"arXiv {src['id']} · {clip(src.get('title', ''), 40)} · 메타데이터 CC0"
     if src["kind"] == "pdf":
-        return f"PDF · {clip(src.get('title', ''), 36)} · {src.get('section', '')} · 서버에 저장하지 않음"
+        return f"{clip(src.get('title', ''), 36)} — {src.get('section', '')}"
     return "붙여 넣은 텍스트 · 앱에 저장하지 않음"
 
 
@@ -1306,21 +1305,20 @@ def input_panel() -> None:
         c1, c2 = st.columns([1.6, 4.7], vertical_alignment="center")   # 개인정보 안내는 이름 옆 ⓘ로
         c1.markdown(f'<div class="pp-input-copy"><div>'
                     f'<div class="pp-field-label">분석할 논문 넣기 '
-                    + info_tip(f"올린 파일·붙여 넣은 글은 서버에 남기지 않고, 읽은 문서와 번역은 이 브라우저에만 저장돼요. "
-                               f"번역할 때만 {engine_name()}로 보내요.") + '</div></div></div>', unsafe_allow_html=True)   # 넣는 방식은 옆 버튼이 말해 준다
+                    + info_tip(f"올린 파일·붙여 넣은 글은 서버에 남기지 않고, 읽은 문서와 번역은 이 브라우저에만 저장됩니다. "
+                               f"번역할 때만 {engine_name()}로 보냅니다.") + '</div></div></div>', unsafe_allow_html=True)   # 넣는 방식은 옆 버튼이 말해 준다
         with c2:
             mode = st.segmented_control("입력 방식", MODES, key="input_mode", label_visibility="collapsed") or M_PDF
         clicked = False
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
                 st.markdown(
-                            '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으세요</div>'
+                            '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으십시오</div>'
                             f'<div class="pp-drop-hint">PDF · {MAX_PDF_MB}MB 이하 '
-                            + info_tip("놓으면 바로 절별로 나눠 분석해요. 글자를 선택할 수 있는 PDF만 읽을 수 있어요"
-                                       "(스캔한 이미지 PDF는 불가).") + '</div>', unsafe_allow_html=True)
+                            + info_tip("글자를 선택할 수 있는 PDF만 읽습니다. 스캔한 이미지 PDF는 읽지 못합니다.") + '</div>', unsafe_allow_html=True)
                 st.file_uploader("논문 PDF", type=["pdf"], key="pdf_file", label_visibility="collapsed",
                                  on_change=on_pdf_drop,
-                                 help="스캔한 이미지 PDF는 글자가 없어 읽지 못해요.")
+                                 help="스캔한 이미지 PDF는 글자가 없어 읽지 못합니다.")
         elif mode == M_ARXIV:
             i1, i2 = st.columns([3, 1], vertical_alignment="center")
             i1.text_input("arXiv ID", key="arxiv_id", placeholder="arXiv ID  예: 2402.08910",
@@ -1328,7 +1326,7 @@ def input_panel() -> None:
             clicked = i2.button("초록 불러오기", type="primary", use_container_width=True, key="load_btn")
         else:
             st.text_area("영어 텍스트", key="paste_text", height=150, label_visibility="collapsed",
-                         placeholder="영어 논문 초록이나 단락을 붙여 넣으세요. PDF 복사 잔재(줄바꿈·쪽번호·머리말)는 자동으로 정리해요.")
+                         placeholder="영어 논문 초록이나 단락을 붙여 넣으십시오. PDF 복사 잔재(줄바꿈·쪽번호·머리말)는 자동으로 정리합니다.")
             clicked = st.button("분석하기", type="primary", key="load_btn")
         b1, b2 = st.columns([1, 1])
         b1.button("예시 문단으로 보기", key="demo_btn", type="tertiary", icon=":material/article:", on_click=load_demo)
@@ -1354,11 +1352,11 @@ def input_panel() -> None:
                 txt = ss.paste_text.strip()
                 letters = sum(ch.isalpha() for ch in txt)
                 if not txt:
-                    ss.input_error = "붙여 넣은 텍스트가 없어요."
+                    ss.input_error = "붙여 넣은 텍스트가 없습니다."
                 elif len(txt) > MAX_PASTE:
-                    ss.input_error = f"텍스트가 너무 길어요({len(txt):,}자). {MAX_PASTE:,}자 이하로 나눠 넣어 주세요."
+                    ss.input_error = f"텍스트가 너무 깁니다({len(txt):,}자). {MAX_PASTE:,}자 이하로 나눠 넣어 주십시오."
                 elif letters and sum(ch.isascii() for ch in txt if ch.isalpha()) / letters < 0.8:
-                    ss.input_error = "영어 텍스트가 아닌 것 같아요. 영어 초록이나 단락을 넣어 주세요."
+                    ss.input_error = "영어 텍스트가 아닌 것 같습니다. 영어 초록이나 단락을 넣어 주십시오."
                 else:
                     ss.input_text = txt
                     ss.source = {"kind": "paste"}
@@ -1390,7 +1388,7 @@ def steps_panel(a) -> None:
                                                         for t, d in steps) + "</div>", unsafe_allow_html=True)
         if a.removed_lines:
             st.caption("제거된 줄: " + " / ".join(a.removed_lines[:8]))
-        st.markdown("**준비된 규칙 켜고 끄기** · 끄면 위 원문 표시가 바로 바뀌어요(자유 정규식 입력은 없음)")
+        st.markdown("**준비된 규칙 켜고 끄기** · 끄면 위 원문 표시가 바로 바뀝니다(자유 정규식 입력은 없음)")
         rule_toggles()
 
 
@@ -1510,7 +1508,7 @@ def account_delete_all() -> None:
     # 지금 화면에 남은 결과를 다음 동기화 때 다시 올리지 않도록 '올린 것'으로 표시해 둔다
     ss.account_sig = {k: SV.signature(v) for k, v in SV.pack_items(ss.translations, ss.ai_gloss).items()}
     ss.account_docs = {k: doc_mark(d) for k, d in ss.browser_docs.items()}
-    ss.saved_msg = "내 계정에 저장된 기록을 모두 지웠어요(이 브라우저에 저장된 것은 그대로예요)."
+    ss.saved_msg = "내 계정에 저장된 기록을 모두 지웠습니다(이 브라우저에 저장된 것은 그대로입니다)."
 
 
 def engine():
@@ -1670,7 +1668,7 @@ def quota_line() -> str | None:
     user = current_user()
     if not user:
         return (f"로그인 없이 맛보기 번역 {ss.guest_chars:,}/{Q.GUEST_CHARS:,}자 · 로그인하면 하루에 논문 "
-                f"{Q.PAPERS_PER_DAY}편을 끝까지 번역할 수 있어요")
+                f"{Q.PAPERS_PER_DAY}편을 끝까지 번역할 수 있습니다")
     try:
         day_usage = get_store().get_usage(user, usage._today())
     except S.StoreError:
@@ -1678,7 +1676,7 @@ def quota_line() -> str | None:
     docs = day_usage.get("docs") or {}
     cur = docs.get(ss.current_doc or "", {})
     return (f"오늘 새 논문 {Q.new_papers(day_usage)}/{Q.PAPERS_PER_DAY}편 번역 · 이 논문 오늘 {cur.get('chars', 0):,}/"
-            f"{Q.MAX_CHARS_PER_PAPER:,}자 · 저장된 번역을 다시 여는 것은 세지 않아요")
+            f"{Q.MAX_CHARS_PER_PAPER:,}자 · 저장된 번역을 다시 여는 것은 세지 않습니다")
 
 
 def ko_html(res, i: int, a) -> str:
@@ -1710,9 +1708,9 @@ def hard_marks(a) -> list:
         e = rows.get(G.term_key(low))
         if e is None or any(x < b and y > s0 for s0, b in taken):
             continue
-        mean = tips.get(G.term_key(e.term)) or "뜻은 '번역하기'나 단어표의 'AI로 뜻 풀이 받기'를 누르면 여기에 떠요"
-        level = f" · 난이도 {e.level}" if e.level else ""
-        out.append(Mark(x, y, "jargon", JARGON_RULE, f"{e.term}: {mean}{level} · 이 글에 {e.count}번"))   # 앞에 '어려운 단어 · '는 mark_tip이 붙인다
+        mean = tips.get(G.term_key(e.term)) or "뜻 풀이는 아직 없습니다"
+        level = f", 난이도 {e.level}" if e.level else ""
+        out.append(Mark(x, y, "jargon", JARGON_RULE, f"{e.term}: {mean} (이 글에 {e.count}번{level})"))   # 앞에 '어려운 단어 · '는 mark_tip이 붙인다
     cache.clear()
     cache.update(sig=sig, marks=out)
     return out
@@ -1748,7 +1746,7 @@ def table_card(t, prefix: str) -> None:
                 f'{esc(t.caption)}</div>', unsafe_allow_html=True)
     st.image(t.png, width=min(t.view_width, 900))    # 고해상도 이미지를 인쇄 크기의 1.5배로(오른쪽 위 버튼으로 전체 화면)
     if t.grid:
-        with st.expander(f"Table {t.num} 표로 보기(자동 인식, 원본 이미지와 비교해 주세요)"):
+        with st.expander(f"Table {t.num} 표로 보기(자동 인식, 원본 이미지와 비교해 주십시오)"):
             import pandas as pd
             width = max(len(r) for r in t.grid)
             rows = [r + [""] * (width - len(r)) for r in t.grid]
@@ -1842,7 +1840,7 @@ def float_pop(phrase: str, sent_idx: int | None, ctx) -> tuple[str, str]:
         if key not in floats:
             return "", ""
         idx = first[key]
-        where = "바로 아래에 있어요" if idx == sent_idx else f"문장 {idx + 1} 아래에 있어요"
+        where = "바로 아래에 있습니다" if idx == sent_idx else f"문장 {idx + 1} 아래에 있습니다"
         return (f" · {floats[key].label}: {where}(마우스를 올리면 미리보기)",
                 f'<span class="pp-pop">{float_box(key, floats[key], "", 520, fixed=True)}</span>')
     return "", ""
@@ -1923,8 +1921,8 @@ def protocol_cards(a) -> None:
     timed = [h for h in (sec.subheads if sec else []) if "Timing" in h]
     cards = []                             # (찾았는지, 제목, 색, 개수, 본문)
     for title, color, pat, none_msg in (
-            ("주의 · CRITICAL·CAUTION", "blue", P.PROTO_CAUTION, "이 절에는 주의(CRITICAL·CAUTION) 표시가 없어요."),
-            ("멈춤 지점 · PAUSE POINT", "teal", P.PROTO_PAUSE, "이 절에는 멈춰도 되는 지점(PAUSE POINT) 표시가 없어요.")):
+            ("주의 · CRITICAL·CAUTION", "blue", P.PROTO_CAUTION, "이 절에는 주의(CRITICAL·CAUTION) 표시가 없습니다."),
+            ("멈춤 지점 · PAUSE POINT", "teal", P.PROTO_PAUSE, "이 절에는 멈춰도 되는 지점(PAUSE POINT) 표시가 없습니다.")):
         hits, lis = items(pat)
         body = (f'<ul class="pp-proto-list">{lis}</ul>' if hits else f'<div class="pp-sk-missing">{none_msg}</div>')
         more = " · 처음 3개만" if len(hits) > 3 else ""
@@ -1935,7 +1933,7 @@ def protocol_cards(a) -> None:
         head.append(f"<li>번호 단계 <b>{min(steps)}–{max(steps)}</b> · {len(set(steps))}개</li>")
     head += [f"<li>{esc(h)}</li>" for h in timed[:3]]
     body = (f'<ul class="pp-proto-list">{"".join(head)}{lis}</ul>' if head or hits else
-            '<div class="pp-sk-missing">이 절에는 번호 단계나 소요 시간 표시가 없어요.</div>')
+            '<div class="pp-sk-missing">이 절에는 번호 단계나 소요 시간 표시가 없습니다.</div>')
     cards.append((bool(head or hits), "단계 · 소요 시간", "violet", f"단계 {len(set(steps))}개", body))
     # 시약·제품: 'Bovine bile (Sigma-Aldrich, cat. no. B3883)'처럼 품번이 붙은 항목. 이름은 괄호 바로 앞 낱말들
     names = []
@@ -1945,7 +1943,7 @@ def protocol_cards(a) -> None:
             names.append(name)
     lis = "".join(f"<li><b>{esc(n)}</b></li>" for n in names[:5])
     body = (f'<ul class="pp-proto-list">{lis}</ul>' if names else
-            '<div class="pp-sk-missing">이 절에는 품번(cat. no.)이 붙은 시약·제품이 없어요.</div>')
+            '<div class="pp-sk-missing">이 절에는 품번(cat. no.)이 붙은 시약·제품이 없습니다.</div>')
     more = " · 처음 5개만" if len(names) > 5 else ""
     cards.append((bool(names), "시약·제품 · cat. no.", "blue", f"{len(names)}개{more}", body))
     # 찾은 것이 있는 카드부터 3장(빈 카드만 나란히 서지 않게). 순서는 위에 적은 차례를 지킨다
@@ -1954,7 +1952,7 @@ def protocol_cards(a) -> None:
         col.markdown(f'<div class="pp-panel pp-card {color}"><div class="pp-card-head"><div class="pp-kind">'
                      f'<span class="pp-kdot"></span>{title}</div><div class="pp-basis signal">{esc(count)}</div></div>'
                      f'{body}<div class="pp-reason">{ICON["info"]}<span>실험 절차 절이라 문제·방법·결과 대신 원문에 '
-                     f'표시된 요점을 보여 줘요.</span></div></div>', unsafe_allow_html=True)
+                     f'표시된 요점을 보여 줍니다.</span></div></div>', unsafe_allow_html=True)
 
 
 NUMBERED_SUB = re.compile(r"^\d+(?:\.\d+)+\.?\s")   # '2.1 Binary-Framed …'처럼 번호 붙은 소제목
@@ -2026,9 +2024,9 @@ def part_picker(a) -> list[tuple[str, int, int]]:
     labels = {k: f"{name} · {hi - lo}문장" for k, (name, lo, hi) in enumerate(parts)}
     with st.container(key="part_bar"):
         what = "이 절 안의 소제목" if by_sub else "이 글 안의 부분(30문장씩)"
-        st.markdown(f'<div class="pp-nav-label">{what} · {len(a.sentences)}문장을 나눠 보여 줘요</div>',
+        st.markdown(f'<div class="pp-nav-label">{what} · {len(a.sentences)}문장을 나눠 보여 줍니다</div>',
                     unsafe_allow_html=True)
-        st.caption("번역·형광펜·뼈대는 글 전체 기준이에요. 아래 ◀ ▶ 버튼으로도 넘길 수 있어요.")
+        st.caption("번역·형광펜·뼈대는 글 전체 기준입니다. 아래 ◀ ▶ 버튼으로도 넘길 수 있습니다.")
         if len(parts) > PART_PILLS_MAX:    # 부분이 많으면 버튼이 여러 줄로 쌓이므로 드롭다운 하나로
             st.selectbox("읽을 부분", list(range(len(parts))), format_func=labels.get, key="part_pick",
                          label_visibility="collapsed", on_change=track_position)
@@ -2191,7 +2189,7 @@ def side_panel(a) -> None:
     uls = card_underlines(a)
     ctx = cur_float_ctx(a)
     ko_head = ("한국어 번역" if res else
-               ("번역을 껐어요" if not ss.show_translation else "위의 번역하기를 누르면 여기에 붙어요"))
+               ("번역을 껐습니다" if not ss.show_translation else "위의 번역하기를 누르면 여기에 붙습니다"))
     rows = [f'{sub_row(a, s.idx)}<div class="pp-side-row"><div class="pp-no">{s.idx + 1}</div>'
             f'<div class="pp-side-en">{en_html(a, s, uls)}</div>'
             f'<div class="pp-side-ko">{ko_html(res, s.idx, a) if res and s.idx < len(res.ko) else ""}</div></div>'
@@ -2200,7 +2198,7 @@ def side_panel(a) -> None:
                 f'<div class="pp-reader-title"><span class="pp-lang">EN</span>영어 원문 '
                 f'<span class="pp-meta">· {range_note(a)}</span></div>'
                 f'<div class="pp-reader-title"><span class="pp-lang">KO</span><span class="pp-meta">{esc(ko_head)}</span></div>'
-                f'</div><div class="pp-sents">{"".join(rows) or "<div class=pp-meta>문장이 없어요.</div>"}</div></div>',
+                f'</div><div class="pp-sents">{"".join(rows) or "<div class=pp-meta>문장이 없습니다.</div>"}</div></div>',
                 unsafe_allow_html=True)
 
 
@@ -2216,7 +2214,7 @@ def interleaved_panel(a) -> None:
               if res and s.idx < len(res.ko) else "")
         rows.append(f'{sub_row(a, s.idx)}<div class="pp-sent pp-pair"><div class="pp-no">{s.idx + 1}</div><div>'
                     f'<div class="pp-pair-en">{en_html(a, s, uls)}</div>{ko}</div></div>{float_cards(s.idx, ctx)}')
-    note = "" if res else '<span class="pp-meta"> · 위 번역 칸에서 번역하면 문장마다 한국어가 붙어요</span>'
+    note = "" if res else '<span class="pp-meta"> · 위 번역 칸에서 번역하면 문장마다 한국어가 붙습니다</span>'
     st.markdown(f'<div class="pp-panel pp-narrow"><div class="pp-reader-head"><div class="pp-reader-title">'
                 f'<span class="pp-lang">EN·KO</span>문장마다 한영 <span class="pp-meta">· {range_note(a)}</span>'
                 f'{note}</div></div><div class="pp-sents">{"".join(rows)}</div></div>', unsafe_allow_html=True)
@@ -2242,7 +2240,7 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
         with h2:
             on = st.toggle("번역 켜짐", key="show_translation")
         if not on:
-            st.markdown('<div class="pp-notice">번역을 껐어요. 원문 표시와 3줄 뼈대는 그대로 동작해요.</div>',
+            st.markdown('<div class="pp-notice">번역을 껐습니다. 원문 표시와 3줄 뼈대는 그대로 동작합니다.</div>',
                         unsafe_allow_html=True)
             return
 
@@ -2250,9 +2248,8 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
         if res is None:
             # 버튼과 전송 안내를 한 줄로(원문까지의 거리를 줄인다). 보관 정책은 ⓘ에, 전송 사실·개인정보 주의는 늘 보이게
             b1, b2 = (hb, hn) if hb is not None else st.columns([1, 4.2], vertical_alignment="center")
-            send = (f"누르면 영어 문장이 {engine_name()}로 전송돼요. 개인정보는 넣지 마세요. "
-                    "이 앱은 입력을 저장하지 않지만, 번역 서비스 측의 보관 정책은 그 서비스의 약관을 따라요.")
-            b2.markdown(f'<div class="pp-send-note">AI 번역 · 참고용 {info_tip(send)}</div>', unsafe_allow_html=True)
+            send = f"영어 문장을 {engine_name()}로 보내 번역합니다. 개인정보는 넣지 마십시오."
+            b2.markdown(f'<div class="pp-send-note">AI 번역(참고용) {info_tip(send)}</div>', unsafe_allow_html=True)
             if b1.button("번역하기", type="primary", key="translate_btn", use_container_width=True, help=send):
                 with st.spinner("번역하는 중…"):
                     ss.translations[(tkey, True)] = run_translate(
@@ -2270,11 +2267,11 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
                 st.rerun()
             return
 
-        detail = {"aligned": "원문 문장과 1:1로 연결했어요(문단을 한 번에 보내고 문장 표시로 짝을 맞춤).",
-                  "per_sentence": "원문 문장과 1:1로 연결했어요(문장 짝이 어긋나 문장 번호로 다시 맞춤).",
+        detail = {"aligned": "원문 문장과 1:1로 연결했습니다(문단을 한 번에 보내고 문장 표시로 짝을 맞춤).",
+                  "per_sentence": "원문 문장과 1:1로 연결했습니다(문장 짝이 어긋나 문장 번호로 다시 맞춤).",
                   "paragraph": ""}[res.mode]
         short = "AI 번역(Claude) · 참고용" if engine()[0] == "claude" else "DeepL 번역 · 참고용"
-        note = "문장 수가 맞지 않아 문단 단위로 보여 줘요 · " if res.mode == "paragraph" else ""
+        note = "문장 수가 맞지 않아 문단 단위로 보여 줍니다 · " if res.mode == "paragraph" else ""
         st.markdown(f'<div class="pp-meta">{note}{short}{" · 저장된 번역" if res.cached else ""} '
                     f'<span class="pp-info" title="{esc(T.ENGINE_LABEL[engine()[0]] + ". " + detail)}">ⓘ</span></div>',
                     unsafe_allow_html=True)
@@ -2284,7 +2281,7 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
                     + (float_cards(i, ctx, ko=True) if floats_on else "") for i in range(len(res.ko)) if in_part(a, i)]
             st.markdown(f'<div class="pp-sents" style="padding:0">{"".join(rows)}</div>', unsafe_allow_html=True)
         elif res.ko is not None:
-            st.markdown(f'<div class="pp-meta">번역 문장은 {where} 보여요.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="pp-meta">번역 문장은 {where} 보입니다.</div>', unsafe_allow_html=True)
         else:
             st.markdown(f'<div class="pp-text">{esc(res.paragraph or "")}</div>', unsafe_allow_html=True)
 
@@ -2294,17 +2291,17 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
             st.caption(line)
         if ss.deepl_calls >= lim.per_session * 0.8:     # 평소에는 숨기고 한도에 가까울 때만 알린다
             st.caption(f"번역 {ss.deepl_calls}/{lim.per_session}회",
-                       help=f"이 화면에서 번역을 {lim.per_session}번까지 쓸 수 있어요. 오늘 사이트 전체 {usage.used_today():,}/"
-                            f"{lim.daily:,}자 사용. 긴 글은 {lim.per_request:,}자씩 나눠 동시에 번역해요.")
+                       help=f"이 화면에서 번역을 {lim.per_session}번까지 쓸 수 있습니다. 오늘 사이트 전체 {usage.used_today():,}/"
+                            f"{lim.daily:,}자 사용. 긴 글은 {lim.per_request:,}자씩 나눠 동시에 번역합니다.")
 
 
 def hero() -> None:
     """첫 화면 히어로: 왼쪽 소개 문구, 오른쪽은 배경 이미지(static/hero.jpg, 이의상 님이 만든 이미지)."""
     # 앱의 중심은 정규식 분석이고 번역은 참고용이라, 소개 문구도 그 순서로(영문 대문자 머리표는 두지 않는다)
     st.markdown('<div class="pp-hero"><div class="pp-hero-text">'
-                '<h1 class="pp-hero-h1">영어 논문, 어디부터 읽을지<br>먼저 짚어 줘요.</h1>'
-                '<div class="pp-hero-desc">문제·방법·결과 문장과 약어·추측·참조 표시를 정규식이 원문에서 찾아요. '
-                '번역은 옆에서 돕는 참고용이에요.</div>'
+                '<h1 class="pp-hero-h1">영어 논문, 어디부터 읽을지<br>먼저 짚어 줍니다.</h1>'
+                '<div class="pp-hero-desc">문제, 방법, 결과 문장과 약어, 추측, 참조 표시를 정규식이 원문에서 찾습니다. '
+                '번역은 옆에서 돕는 참고용입니다.</div>'
                 # 배지 대신 실제 읽기 화면과 같은 형광펜을 칠한 문장 한 줄(예시 문단의 마지막 문장): 무엇을 해 주는지 바로 보이게
                 '<figure class="pp-hero-sample"><p>These findings suggest that a '
                 '<span class="pp-m term" data-tip="반복 용어: 글에서 여러 번 나오는 핵심 용어">compact reranker</span> '
@@ -2317,9 +2314,9 @@ def hero() -> None:
 
 def empty_guide() -> None:
     """자료를 넣기 전 화면: 결과 창들은 숨기고 쓰는 순서만 보여 준다."""
-    steps = [("1", "논문 넣기", "PDF를 위 칸에 끌어다 놓거나, arXiv ID·텍스트를 넣어요."),
-             ("2", "절 고르기", "PDF는 Abstract·Introduction처럼 절로 나뉘어요. 읽을 절을 눌러요."),
-             ("3", "읽는 길 따라가기", "3줄 뼈대 → 형광펜·밑줄 원문 → 번역 → 흐름도·어려운 단어표 순서로 봐요.")]
+    steps = [("1", "논문 넣기", "PDF를 위 칸에 끌어다 놓거나, arXiv ID·텍스트를 넣습니다."),
+             ("2", "절 고르기", "PDF는 Abstract·Introduction처럼 절로 나뉩니다. 읽을 절을 누릅니다."),
+             ("3", "읽기", "3줄 뼈대 → 형광펜·밑줄 원문 → 번역 → 흐름도·어려운 단어표 순서로 봅니다.")]
     cards = "".join(f'<div class="pp-guide-step"><div class="pp-guide-no">{n}</div><div><b>{t}</b>'
                     f'</div></div>' for n, t, d in steps)   # 설명 줄은 뺐다(제목만으로 순서가 보인다)
     st.markdown(f'<div class="pp-guide">{cards}</div>', unsafe_allow_html=True)
@@ -2397,7 +2394,7 @@ def reading_page() -> None:
     en_panel = (f'<div class="pp-panel pp-narrow"><div class="pp-reader-head"><div class="pp-reader-title">'
                 f'<span class="pp-lang">EN</span>영어 원문 <span class="pp-meta">· {range_note(a)}</span></div>'
                 f'</div>'
-                f'<div class="pp-sents">{rows or "<div class=pp-meta>문장이 없어요.</div>"}</div></div>')
+                f'<div class="pp-sents">{rows or "<div class=pp-meta>문장이 없습니다.</div>"}</div></div>')
     if mode == "side":
         if current_translation(a) is None:     # 번역 전에는 오른쪽 칸이 통째로 비므로 영어 원문만 한 칸으로
             with st.container(key="ko_narrow"):   # 번역 칸도 아래 영어 칸과 같은 가운데 960px(왼쪽 끝을 맞춘다)
@@ -2420,7 +2417,7 @@ def reading_page() -> None:
     part_nav_buttons(parts, narrow=narrow)
     if ctx[0]:
         st.caption(f"이 글에 나온 표·그림 {len(ctx[0])}개({', '.join(t.label for t in ctx[0].values())})는 처음 언급한 "
-                   "문장 바로 아래에 접어 두었어요. 누르면 펼쳐지고, 'Table 2'·'Fig. 3' 표시에 마우스를 올리면 미리보기가 떠요.")
+                   "문장 바로 아래에 접어 두었습니다. 누르면 펼쳐지고, 'Table 2'·'Fig. 3' 표시에 마우스를 올리면 미리보기가 뜹니다.")
     st.markdown('<hr class="pp-end">', unsafe_allow_html=True)   # 본문 끝과 03 보조 자료를 나누는 선
     track_position(user=False)             # 처음 연 위치 등 콜백 없이 바뀐 위치(다음 실행의 브라우저 저장에 실림)
 
@@ -2436,8 +2433,7 @@ def reading_page() -> None:
     with tab_gloss:
         glossary_block(a, rows)
 
-    st.markdown('<div class="pp-foot"><span><strong>읽는 길은 정규식이, 판단은 학생이.</strong> '
-                '원문은 수정하거나 요약문으로 대체하지 않습니다.</span></div>',
+    st.markdown('<div class="pp-foot"><span>원문은 고치거나 요약으로 바꾸지 않습니다.</span></div>',
                 unsafe_allow_html=True)
     maybe_tutorial()                       # 화면 위 안내는 가리킬 요소가 다 그려진 맨 끝에서
 
@@ -2454,19 +2450,19 @@ def glossary_block(a, rows) -> None:
     claude_ok = engine()[0] == "claude"
     if g2.button("AI로 뜻 풀이 받기", key="ai_gloss_btn", icon=":material/auto_awesome:", use_container_width=True,
                  disabled=not rows or not claude_ok or bool(meanings),
-                 help=("단어 선정은 정규식, 뜻 풀이만 Claude Haiku가 써요(참고용). 단어와 처음 나온 문장이 Claude로 전송돼요."
-                       if claude_ok else "Claude API 키가 있을 때만 쓸 수 있어요.")):
+                 help=("단어 선정은 정규식, 뜻 풀이만 Claude Haiku가 씁니다(참고용). 단어와 처음 나온 문장이 Claude로 전송됩니다."
+                       if claude_ok else "Claude API 키가 있을 때만 쓸 수 있습니다.")):
         fetch_meanings(a, rows)
         st.rerun()
     g3.download_button("단어표 내려받기(CSV)", G.to_csv(rows), file_name="paperpath_glossary.csv", mime="text/csv",
                        key="glossary_csv", disabled=not rows, use_container_width=True)
     if ss.get("ai_gloss_error"):
         st.warning(ss.ai_gloss_error)
-    st.caption("한국어로 옮겨도 뜻이 바로 안 풀릴 전문용어만 모았어요. 한국어·AI 풀이는 참고용이에요.",
+    st.caption("한국어로 옮겨도 뜻이 바로 안 풀릴 전문용어만 모았습니다. 한국어·AI 풀이는 참고용입니다.",
                help="고르는 기준: 일상 영어에서 아주 드문 말(wordfreq Zipf 3.0 미만, 자주 나오는 말은 3.5 미만), 글 안에 풀네임이 "
                     "있는 약어. 흔한 말에 접사가 붙은 말(unlabeled, bidirectional)·부사·사람 이름(et al. 같은 인용 표시가 붙는 말)·"
-                    "수식 기호는 뺐어요. 같은 낱말의 어형(annotate·annotating)은 한 줄로 묶고 횟수를 합쳐요. "
-                    f"'한국어'는 번역기가 옮긴 대응어, 'AI 풀이'는 Claude Haiku가 쓴 뜻풀이예요(AI 풀이는 {MAX_TERMS}개까지).")
+                    "수식 기호는 뺐습니다. 같은 낱말의 어형(annotate·annotating)은 한 줄로 묶고 횟수를 합칩니다. "
+                    f"'한국어'는 번역기가 옮긴 대응어, 'AI 풀이'는 Claude Haiku가 쓴 뜻풀이입니다(AI 풀이는 {MAX_TERMS}개까지).")
     st.markdown(glossary_table(rows[:GLOSS_PREVIEW]), unsafe_allow_html=True)
     if len(rows) > GLOSS_PREVIEW:
         with st.expander(f"전체 단어표 보기 · {len(rows)}개"):
@@ -2490,7 +2486,7 @@ def evidence_cards(a) -> None:
             if a.acronyms:
                 st.markdown("\n".join(f"- **{k}** → {v if v else '정의를 찾지 못함'}" for k, v in a.acronyms.items()))
             else:
-                st.write("탐지된 약어가 없어요.")
+                st.write("탐지된 약어가 없습니다.")
     with b2, st.container(key="ev_rule"):
         m1, m2 = st.columns([4, 1.1], vertical_alignment="center")
         m1.markdown(f'<div class="pp-mini"><div class="pp-mini-icon">{ICON["rule"]}</div><div>'
@@ -2505,8 +2501,8 @@ def evidence_cards(a) -> None:
 
 def rules_page() -> None:
     st.markdown('<div class="pp-intro"><div><div class="pp-eyebrow">RULE EXPLORER</div>'
-                '<h1 class="pp-h1">화면의 모든 표시는 이 규칙에서 나와요.</h1>'
-                '<div class="pp-desc">준비된 규칙만 켜고 끌 수 있어요. 임의의 정규식을 입력하는 기능은 없습니다.</div></div></div>',
+                '<h1 class="pp-h1">화면의 모든 표시는 이 규칙에서 나옵니다.</h1>'
+                '<div class="pp-desc">준비된 규칙만 켜고 끌 수 있습니다. 임의의 정규식을 입력하는 기능은 없습니다.</div></div></div>',
                 unsafe_allow_html=True)
     with st.container(key="rule_panel"):
         st.markdown("**처리 단계(읽기 전용)**")
@@ -2525,7 +2521,7 @@ def rules_page() -> None:
         s = a.sentences[0]
         st.markdown(f'<div class="pp-text" style="padding:8px 0">{render_marked(a.text, s.start, s.end, a.marks)}</div>',
                     unsafe_allow_html=True)
-        st.caption("예: '추측 제외(가능·허용)'를 끄면 may be applied의 may가 추측으로 칠해져요.")
+        st.caption("예: '추측 제외(가능·허용)'를 끄면 may be applied의 may가 추측으로 칠해집니다.")
 
     st.markdown(sec_head("R", "준비된 규칙 목록", "patterns.py에서 그대로 가져온 내용"), unsafe_allow_html=True)
     for r in (*P.TOKEN_RULES, *P.SKELETON_RULES, P.POSITION_FALLBACK_RULE):
@@ -2549,7 +2545,7 @@ def cached_skeleton_stats() -> dict:
 
 def validation_page() -> None:
     st.markdown('<div class="pp-intro"><div><div class="pp-eyebrow">VALIDATION</div>'
-                '<h1 class="pp-h1">측정한 것과 목표를 나눠서 보여 드려요.</h1>'
+                '<h1 class="pp-h1">측정한 것과 목표를 나눠서 보여 드립니다.</h1>'
                 '<div class="pp-desc">표본이 작아 일반화하지 않습니다. 측정 전인 항목은 목표나 예정으로 표시합니다.</div></div></div>',
                 unsafe_allow_html=True)
     stats = cached_skeleton_stats()
@@ -2560,10 +2556,10 @@ def validation_page() -> None:
         b = bench["summary"]
         mask_row = ("measured", f"{b['date']} · 초록 {b['papers']}편 · 보호 토큰 {b['tokens']}개 중 문자열 그대로 남은 것: "
                     f"마스킹 켬 {b['on_kept']}개 / 끔 {b['off_kept']}개. 단, 끔 쪽 차이 대부분은 값이 같은 표기 변환이었고 "
-                    "의미 있는 손실은 약어 2건뿐. 켬 쪽에서는 수치 보호 때문에 틀린 숫자가 1건 나와 수치 보호를 뺐어요(아래 상세)")
+                    "의미 있는 손실은 약어 2건뿐. 켬 쪽에서는 수치 보호 때문에 틀린 숫자가 1건 나와 수치 보호를 뺐습니다(아래 상세)")
     else:
         mask_row = ("planned", "2주차 실측 예정(30편). 사전 3문장 실험(2026-11-04)에서는 마스킹 끔에서도 BERT·3.1%·[4]가 "
-                    "보존됐고 Table 1이 '표 1'로 바뀐 차이만 있었어요")
+                    "보존됐고 Table 1이 '표 1'로 바뀐 차이만 있었습니다")
     rows = [
         ("3줄 뼈대 채움률 — 신호 문구만", "measured",
          f"arXiv cs.CL 초록 {n}편(연도 6개 × 50편) 중 셋 다 채움 {so['all_three_filled']}편 ({so['all_three_filled'] / n:.0%})"),
@@ -2596,13 +2592,13 @@ def validation_page() -> None:
             st.caption(f"설정: {bench['summary'].get('config', '')} · 전송량 약 {bench['summary'].get('chars_sent_approx', 0):,}자")
     st.markdown(sec_head("!", "알려진 한계"), unsafe_allow_html=True)
     st.markdown(
-        "- 샘플은 연도별 연말 최신 제출 50편이라 대표성이 없어요.\n"
-        "- `XGBoost`, `BiLSTM`, `k-NN` 같은 약어는 풀네임을 찾지 못해요(틀린 풀네임을 만들지 않고 '정의를 찾지 못함'으로 표시).\n"
-        "- 추측 표시는 조동사 자체를 표시하며, 문장을 넘는 문맥은 보지 않아요.\n"
-        "- 번역은 말투(~습니다/~한다)가 섞일 수 있어요.\n"
-        "- PDF 2단 편집 순서는 복원하지 않아요. arXiv ID 입력을 권장해요.\n"
-        "- 번역은 Claude Haiku 5.5(AI 번역, 키가 있을 때) 또는 DeepL이 해요. AI 번역은 드물게 뜻을 바꾸거나 빼먹을 수 있어 참고용이에요.\n"
-        "- 번역 서비스 측의 데이터 보관은 각 서비스의 약관을 따르며, 이 앱이 따로 확인하지는 못했어요.")
+        "- 샘플은 연도별 연말 최신 제출 50편이라 대표성이 없습니다.\n"
+        "- `XGBoost`, `BiLSTM`, `k-NN` 같은 약어는 풀네임을 찾지 못합니다(틀린 풀네임을 만들지 않고 '정의를 찾지 못함'으로 표시).\n"
+        "- 추측 표시는 조동사 자체를 표시하며, 문장을 넘는 문맥은 보지 않습니다.\n"
+        "- 번역은 말투(~습니다/~한다)가 섞일 수 있습니다.\n"
+        "- PDF 2단 편집 순서는 복원하지 않습니다. arXiv ID 입력을 권장합니다.\n"
+        "- 번역은 Claude Haiku 5.5(AI 번역, 키가 있을 때) 또는 DeepL이 합니다. AI 번역은 드물게 뜻을 바꾸거나 빼먹을 수 있어 참고용입니다.\n"
+        "- 번역 서비스 측의 데이터 보관은 각 서비스의 약관을 따르며, 이 앱이 따로 확인하지는 못했습니다.")
 
 
 # ================================================================ 메인

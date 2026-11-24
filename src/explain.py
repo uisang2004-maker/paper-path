@@ -58,7 +58,7 @@ def explain_terms(items: list[tuple[str, str, str]], api_key: str, client=None) 
     try:
         data = json.loads(text)
     except json.JSONDecodeError as e:
-        raise T.TranslationError("AI 풀이 답을 읽지 못했어요. 다시 시도해 주세요.") from e
+        raise T.TranslationError("AI 풀이 답을 읽지 못했습니다. 다시 시도해 주십시오.") from e
     sent = {t for t, _, _ in items[:MAX_TERMS]}
     out = {}
     for row in data.get("items", []):

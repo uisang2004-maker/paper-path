@@ -187,33 +187,33 @@ def _marks(text: str, acronyms: dict[str, str | None], active: frozenset) -> lis
     marks: list[Mark] = []
     if "REFERENCE" in active:
         for m in P.REFERENCE.finditer(text):
-            marks.append(Mark(m.start(), m.end(), "reference", "REFERENCE", f"참조 · {P.REFERENCE_RULE.reason}"))
+            marks.append(Mark(m.start(), m.end(), "reference", "REFERENCE", P.REFERENCE_RULE.reason))
     if "ABBR" in active:
         for abbr, long_form in acronyms.items():
             for m in re.finditer(rf"\b{re.escape(abbr)}s?\b", text):
                 if long_form:
-                    marks.append(Mark(m.start(), m.end(), "abbr", "ABBR", f"{abbr} = {long_form} · 규칙 ABBR"))
+                    marks.append(Mark(m.start(), m.end(), "abbr", "ABBR", f"{abbr} = {long_form}"))
                 else:
-                    marks.append(Mark(m.start(), m.end(), "abbr-missing", "ABBR", f"{abbr}: 이 글에서 정의를 찾지 못함 · 규칙 ABBR"))
+                    marks.append(Mark(m.start(), m.end(), "abbr-missing", "ABBR", f"이 글에서 '{abbr}'의 풀네임을 찾지 못했습니다"))
     if "CONFIDENT" in active:
         for m in P.CONFIDENT.finditer(text):
-            marks.append(Mark(m.start(), m.end(), "confident", "CONFIDENT", f"확신 · {P.CONFIDENT_RULE.reason}"))
+            marks.append(Mark(m.start(), m.end(), "confident", "CONFIDENT", P.CONFIDENT_RULE.reason))
     if "NUMBER" in active:
         for m in P.EVIDENCE_NUMBER.finditer(text):
-            marks.append(Mark(m.start(), m.end(), "number", "NUMBER", f"수치 근거 · {P.NUMBER_RULE.reason}"))
+            marks.append(Mark(m.start(), m.end(), "number", "NUMBER", P.NUMBER_RULE.reason))
     if "DEFINITION" in active:
         for m in P.DEFINITION_CUE.finditer(text):
-            marks.append(Mark(m.start(), m.end(), "definition", "DEFINITION", f"용어 설명·예시 · {P.DEFINITION_RULE.reason}"))
+            marks.append(Mark(m.start(), m.end(), "definition", "DEFINITION", P.DEFINITION_RULE.reason))
     if "TERM" in active:
         for term, n, spans in key_terms(text):   # 핵심 용어 몇 개만, 처음 나온 곳에(전부 칠하면 형광펜이 배경이 된다)
             for x, y in spans:
-                marks.append(Mark(x, y, "term", "TERM", f"반복 용어 · '{term}'이(가) 이 글에 {n}번 나와요"))
+                marks.append(Mark(x, y, "term", "TERM", f"'{term}'이(가) 이 글에 {n}번 나옵니다"))
     if "HEDGE" in active:
         excluded = [(m.start(), m.end()) for m in P.HEDGE_EXCLUDE.finditer(text)] if "HEDGE_EXCLUDE" in active else []
         for m in P.HEDGE.finditer(text):
             if any(a <= m.start() < b for a, b in excluded):
                 continue
-            marks.append(Mark(m.start(), m.end(), "hedge", "HEDGE", f"추측·가능성 · {P.HEDGE_RULE.reason}"))
+            marks.append(Mark(m.start(), m.end(), "hedge", "HEDGE", P.HEDGE_RULE.reason))
 
     # 시약 품번 괄호 '(Sigma-Aldrich, cat. no. B3883)' 안에는 표시하지 않는다('cat'이 반복 용어가 되는 등)
     catalog = [(m.start(), m.end()) for m in P.CATALOG_PAREN.finditer(text)]
@@ -339,11 +339,12 @@ def explanation_spans(text: str, sentences: list[Sentence]) -> list[tuple[int, i
             end = close + 1 if close > 0 else end
         kind = "예시" if any(cue.startswith(c) for c in EXAMPLE_CUES) else "설명"
         term = "" if cue.startswith(("i.e", "that is", "namely")) else _term_before(text, m.start())
-        add(start, end, f"용어 {kind} · '{term}'의 {kind}" if term else f"용어 {kind} · 앞 내용을 풀어 쓴 부분")
+        add(start, end, (f"'{term}'의 예를 든 부분입니다" if kind == "예시" else f"'{term}'을(를) 풀어 쓴 부분입니다")
+            if term else "앞 내용을 풀어 쓴 부분입니다")
     for m in P.APPOSITIVE.finditer(text):
         a = m.start("art")
         b = text.find(",", a)
-        add(a, b if b > 0 else a, f"용어 설명 · '{m.group('term')}'의 설명(동격)")
+        add(a, b if b > 0 else a, f"'{m.group('term')}'을(를) 풀어 쓴 부분입니다")
     return sorted(out)
 
 
@@ -381,7 +382,7 @@ def select_skeleton(sentences: list[Sentence], use_fallback: bool = True) -> tup
         if "problem" not in cards and sentences and sentences[0].idx not in used and not _excluded_for_fallback(sentences[0]):
             s = sentences[0]
             cards["problem"] = SkeletonCard("problem", s.idx, "position", "분야 배경 (첫 문장)",
-                                            "신호 문구가 없어 첫 문장을 보여 줘요. 초록 첫 문장은 대개 분야 배경이에요",
+                                            "신호 문구가 없어 첫 문장을 보여 줍니다. 초록 첫 문장은 대개 분야 배경입니다",
                                             None, "SK_FALLBACK")
             used.add(s.idx)
         if "method" not in cards:
@@ -389,7 +390,7 @@ def select_skeleton(sentences: list[Sentence], use_fallback: bool = True) -> tup
                 if s.idx not in used and P.AUTHOR_VOICE.search(s.text) and not _excluded_for_fallback(s):
                     m = P.AUTHOR_VOICE.search(s.text)
                     cards["method"] = SkeletonCard("method", s.idx, "position", "저자 서술 문장 (방법 추정)",
-                                                   "방법 신호가 없어 저자(we/our)가 쓴 첫 문장을 골랐어요",
+                                                   "방법 신호가 없어 저자(we/our)가 쓴 첫 문장을 골랐습니다",
                                                    (m.start(), m.end()), "SK_FALLBACK")
                     used.add(s.idx)
                     break
@@ -399,12 +400,12 @@ def select_skeleton(sentences: list[Sentence], use_fallback: bool = True) -> tup
             pick = (hinted or pool)[-1] if (hinted or pool) else None
             if pick:
                 cards["result"] = SkeletonCard("result", pick.idx, "position", "마무리 문장 (결과 추정)",
-                                               "결과 신호가 없어 뒤쪽 문장 중 수치·결과 동사가 있는 문장을 골랐어요",
+                                               "결과 신호가 없어 뒤쪽 문장 중 수치·결과 동사가 있는 문장을 골랐습니다",
                                                None, "SK_FALLBACK")
                 used.add(pick.idx)
 
     missing = {"problem": "문제 문장을 찾지 못함", "method": "방법 문장을 찾지 못함", "result": "결과 문장을 찾지 못함"}
-    out = [cards.get(k) or SkeletonCard(k, None, "none", missing[k], "규칙에 맞는 문장이 없어 비워 두지 않고 상태를 표시해요")
+    out = [cards.get(k) or SkeletonCard(k, None, "none", missing[k], "규칙에 맞는 문장이 없어 비워 두지 않고 상태를 표시합니다")
            for k in CARD_KINDS]
     limits = [s.idx for s in sentences if P.SK_LIMIT.search(s.text)]
     return out, limits

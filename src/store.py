@@ -98,9 +98,9 @@ class SupabaseStore:
                 detail = " · " + str(err.get("message") or err.get("msg") or err.get("hint") or "")[:160]
             except Exception:
                 pass
-            raise StoreError(f"내 계정 저장소 오류(HTTP {e.code}{detail}). 결과는 이 브라우저에는 그대로 저장돼요.") from e
+            raise StoreError(f"내 계정 저장소 오류(HTTP {e.code}{detail}). 결과는 이 브라우저에는 그대로 저장됩니다.") from e
         except (urllib.error.URLError, TimeoutError) as e:
-            raise StoreError("내 계정 저장소에 연결하지 못했어요. 결과는 이 브라우저에는 그대로 저장돼요.") from e
+            raise StoreError("내 계정 저장소에 연결하지 못했습니다. 결과는 이 브라우저에는 그대로 저장됩니다.") from e
         return json.loads(raw) if raw else []
 
     def _upsert(self, table: str, key_col: str, val_col: str, user: str, rows: dict) -> None:

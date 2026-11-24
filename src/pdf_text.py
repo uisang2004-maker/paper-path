@@ -324,7 +324,7 @@ def extract(data: bytes) -> PdfText:
     try:
         pdf = pdfplumber.open(io.BytesIO(data))
     except Exception as e:                # 깨진 파일·암호 걸린 파일
-        raise PdfError("PDF를 열지 못했어요. 암호가 걸렸거나 손상된 파일일 수 있어요.") from e
+        raise PdfError("PDF를 열지 못했습니다. 암호가 걸렸거나 손상된 파일일 수 있습니다.") from e
     with pdf:
         total = len(pdf.pages)
         pages: list[list[tuple]] = []
@@ -345,10 +345,10 @@ def extract(data: bytes) -> PdfText:
             lines.append("")              # 쪽 경계
         meta_title = (pdf.metadata or {}).get("Title") or ""
     if not any(ln.strip(MARKS + " ") for ln in lines):
-        raise PdfError("PDF에서 글자를 찾지 못했어요. 스캔한 이미지 PDF는 지원하지 않아요(글자를 선택할 수 있는 PDF만 가능).")
+        raise PdfError("PDF에서 글자를 찾지 못했습니다. 스캔한 이미지 PDF는 지원하지 않습니다(글자를 선택할 수 있는 PDF만 가능).")
     notes = []
     if total > MAX_PAGES:
-        notes.append(f"{total}쪽 중 앞 {MAX_PAGES}쪽만 읽었어요.")
+        notes.append(f"{total}쪽 중 앞 {MAX_PAGES}쪽만 읽었습니다.")
     if isinstance(meta_title, str) and len(meta_title.split()) >= 3 and not re.search(r"\.(?:dvi|tex|pdf)$", meta_title):
         title = meta_title.strip()
     return PdfText(lines=lines, pages=total, read_pages=min(total, MAX_PAGES), title=title.strip(),
