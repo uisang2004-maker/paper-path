@@ -189,9 +189,10 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 .pp-m.number { color:var(--teal-ink); background:var(--teal-soft); }
 .pp-m.term { color:inherit; font-weight:inherit; background:transparent; padding:0; border-bottom:1.5px solid var(--c-blue); border-radius:0; }
 /* 설명창은 단어 위쪽에 띄운다: 아래에 띄우면 곧 읽을 다음 줄을 가린다(카드 안은 위가 잘리므로 아래) */
-.pp-m:hover::after, .pp-m:focus::after { content: attr(data-tip); position:absolute; left:0; bottom:calc(100% + 6px); z-index:20;
+/* --tip-dx: 화면 끝에서 넘치는 만큼 안쪽으로 미는 값(app.py TIP_FIT_CORE가 뜰 때 잰다) */
+.pp-m:hover::after, .pp-m:focus::after { content: attr(data-tip); position:absolute; left:var(--tip-dx, 0px); bottom:calc(100% + 6px); z-index:20;
   background:var(--ink); color:#fff; font-size:12px; font-weight:400; line-height:1.5; padding:8px 8px; border-radius:8px;
-  width:max-content; max-width:300px; white-space:normal; box-shadow:0 6px 16px rgba(0,0,0,.18); }
+  width:max-content; max-width:min(300px, calc(100vw - 40px)); white-space:normal; box-shadow:0 6px 16px rgba(0,0,0,.18); }
 .pp-card .pp-m:hover::after, .pp-card .pp-m:focus::after { top:calc(100% + 6px); bottom:auto; }
 .pp-banner { margin:-14px -16px 12px; padding:8px 16px; background:var(--wash); color:var(--pencil); font-size:12px; border-bottom:1px solid var(--rule-soft); }
 .pp-notice { color:var(--pencil); font-size:13px; line-height:1.6; background:var(--wash); border:1px dashed var(--rule); border-radius:8px; padding:12px 16px; margin-bottom:12px; }
