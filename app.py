@@ -855,7 +855,7 @@ def read_settings() -> None:
     ss = st.session_state
     for name, value in read_cfg().items():
         ss[name] = value
-    with st.popover("읽기 설정", icon=":material/tune:", use_container_width=True,   # 이름이 바뀌면 창이 닫히므로 고정
+    with st.popover("읽기 설정", icon=":material/tune:", width="content",   # 이름이 바뀌면 창이 닫히므로 고정
                     help="글자 크기·글꼴·줄 간격을 눈이 편하게"):
         st.slider("영어 원문 글자 크기(px)", READ_PX_MIN, READ_PX_MAX, step=1, key="read_px",
                   on_change=on_read_pref, args=("read_px",), help="한국어 번역과 3줄 뼈대 인용도 같은 비율로 바뀝니다")
@@ -2365,13 +2365,14 @@ def reading_page() -> None:
                     unsafe_allow_html=True)
 
     # 제목 줄(02 · 단계 보기 토글) 아래에 칩을 한 줄 전체 폭으로: 가운데 좁은 칸에 두면 칩이 많을 때 토글을 덮었다
-    t1, t2, t3 = st.columns([2.2, 1, 1], vertical_alignment="center")
+    # 오른쪽 끝에 읽기 설정·단계 보기를 한 묶음으로(넓은 칸 가운데 떠 있던 버튼을 글자 폭만큼, 제목과 같은 높이에)
+    t1, t2 = st.columns([1, 1], vertical_alignment="center")
     t1.markdown(sec_head("02", "원문과 번역 읽기"), unsafe_allow_html=True)
-    with t2, st.container(key="read_size_bar"):   # 눈이 편한 글자 크기·글꼴·줄 간격을 사람마다
-        read_settings()
-    st.markdown(read_size_style(), unsafe_allow_html=True)
-    with t3:
+    with t2, st.container(key="read_size_bar", horizontal=True, horizontal_alignment="right",
+                          vertical_alignment="center", gap="medium"):
+        read_settings()   # 눈이 편한 글자 크기·글꼴·줄 간격을 사람마다
         st.toggle("읽기 전용 단계 보기", key="show_steps")
+    st.markdown(read_size_style(), unsafe_allow_html=True)
     # 읽기 도구 한 줄: 형광펜 칩(왼쪽)과 읽기 모드(오른쪽). 원문까지의 거리를 줄인다(칩 설명은 칩의 도움말 ⓘ에)
     ss.setdefault("read_mode", READ_MODES[0])
     with st.container(key="read_tools"):

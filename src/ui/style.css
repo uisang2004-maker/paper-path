@@ -596,10 +596,10 @@ header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"], [d
 }
 @keyframes pp-rise { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 
-/* 글자 크기 고르기(02 제목 줄 가운데): 작은 버튼 셋, 오른쪽 끝 맞춤 */
-.st-key-read_size_bar { align-items:flex-end; }
+/* 읽기 설정·단계 보기(02 제목 줄 오른쪽 끝): 글자 폭만큼의 작은 버튼과 토글을 한 묶음으로 */
 .st-key-read_size_bar button { min-height:32px; padding:0 12px; font-size:13px; }
-@media (max-width: 640px) { .st-key-read_size_bar { align-items:flex-start; } }
+@media (min-width: 641px) { .st-key-read_size_bar { margin-top:10px; } }   /* 제목 글자 높이에 맞춤(제목 칸은 아래 여백이 -16px) */
+@media (max-width: 640px) { .st-key-read_size_bar { justify-content:flex-start; } }
 /* '표시 모두 끄기': 칩 줄 아래 작은 글자 버튼(칩보다 한 단계 약하게) */
 .st-key-marks_all button { min-height:32px; padding:0 4px; color:var(--pencil); font-size:13px; }
 .st-key-marks_all button:hover { color:var(--link); }
