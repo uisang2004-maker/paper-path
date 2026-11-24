@@ -39,6 +39,8 @@ _browser_store = components.declare_component(
 PAGES = ("논문 읽기", "규칙 탐색", "검증 결과")
 MODES = ("논문 PDF", "arXiv ID", "텍스트 붙여 넣기")
 M_PDF, M_ARXIV, M_PASTE = MODES
+MODE_LABEL = {M_PDF: ":material/picture_as_pdf: 논문 PDF", M_ARXIV: ":material/tag: arXiv ID",   # 넣는 방식 버튼에 아이콘
+              M_PASTE: ":material/content_paste: 텍스트 붙여 넣기"}
 MAX_PASTE = 20000
 MAX_PDF_MB = 20
 CHIPS = (("abbr", "약어", "blue"), ("hedge", "추측·가능성", "amber"), ("confident", "확신", "teal"),
@@ -1343,7 +1345,8 @@ def input_panel() -> None:
                     + info_tip(f"올린 파일·붙여 넣은 글은 서버에 남기지 않고, 읽은 문서와 번역은 이 브라우저에만 저장됩니다. "
                                f"번역할 때만 {engine_name()}로 보냅니다.") + '</div></div></div>', unsafe_allow_html=True)   # 넣는 방식은 옆 버튼이 말해 준다
         with c2:
-            mode = st.segmented_control("입력 방식", MODES, key="input_mode", label_visibility="collapsed") or M_PDF
+            mode = st.segmented_control("입력 방식", MODES, key="input_mode", label_visibility="collapsed",
+                                        format_func=MODE_LABEL.get) or M_PDF
         clicked = False
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
@@ -2331,7 +2334,8 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
 
 
 def hero() -> None:
-    """첫 화면 히어로: 왼쪽 소개 문구, 오른쪽은 배경 이미지(static/hero.jpg, 이의상 님이 만든 이미지)."""
+    """첫 화면 히어로: 왼쪽 소개 문구, 오른쪽은 배경 이미지(밝은 화면 static/hero.jpg·어두운 화면 static/hero_dark.jpg,
+    이의상 님이 만든 이미지)."""
     # 앱의 중심은 정규식 분석이고 번역은 참고용이라, 소개 문구도 그 순서로(영문 대문자 머리표는 두지 않는다)
     st.markdown('<div class="pp-hero"><div class="pp-hero-text">'
                 '<h1 class="pp-hero-h1">영어 논문을<br>더 쉽고 편하게.</h1>'
