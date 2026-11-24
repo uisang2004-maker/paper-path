@@ -1313,7 +1313,7 @@ def input_panel() -> None:
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
                 st.markdown(
-                            '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으십시오</div>'
+                            '<div class="pp-drop-title">PDF 파일 가져오기</div>'
                             f'<div class="pp-drop-hint">PDF · {MAX_PDF_MB}MB 이하 '
                             + info_tip("글자를 선택할 수 있는 PDF만 읽습니다. 스캔한 이미지 PDF는 읽지 못합니다.") + '</div>', unsafe_allow_html=True)
                 st.file_uploader("논문 PDF", type=["pdf"], key="pdf_file", label_visibility="collapsed",
