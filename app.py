@@ -376,6 +376,7 @@ def open_doc(doc_id: str) -> None:
         if "표·그림은 PDF를 다시 넣으면 보여요." not in paper.notes:
             paper.notes.append("표·그림은 PDF를 다시 넣으면 보여요.")
         ss.paper = paper
+        ss.paper_page_count = None                 # 다시 연 문서는 PDF 쪽 수를 모른다(앞 PDF의 쪽 수가 남지 않게)
         ss.paper_cur, ss.body_cur = PAPER_PAGES[0], 0
         for k in ("paper_page", "section_pick"):
             ss.pop(k, None)
@@ -743,6 +744,7 @@ def load_pdf(data: bytes, name: str) -> str | None:
         ss.paper_figures = []
     paper.notes = [f"PDF {pdf.read_pages}쪽을 읽었어요" + (f"(2단 편집 {pdf.two_column_pages}쪽은 왼쪽 단 → 오른쪽 단 순서로)"
                                                        if pdf.two_column_pages else "") + "."] + pdf.notes + paper.notes
+    ss.paper_page_count = pdf.read_pages          # 00 제목 줄에 'n쪽'으로(자세한 안내는 ⓘ에)
     ss.paper = paper
     ss.paper_cur, ss.body_cur = PAPER_PAGES[0], 0
     for k in ("paper_page", "section_pick"):     # 앞 논문의 선택 위젯 상태를 지운다
@@ -1122,8 +1124,7 @@ def flow_map(a, tr=None) -> str:
     if not steps:
         return '<div class="pp-meta">문장이 없어요.</div>'
     detail = [i + 1 for i, r in enumerate(a.roles) if r == "detail"]
-    note = (f'<div class="pp-flow-note">보충 문장: {", ".join(f"문장 {j}" for j in detail)} '
-            f'(신호 문구가 없어 흐름 단계로 분류하지 않았어요)</div>') if detail else ""
+    note = ""   # 보충 문장 목록은 화면에서 뺐다(흐름 단계로 나누지 않은 문장 번호 나열이라 읽는 데 도움이 적었음)
     arrow = '<div class="pp-flow-arrow" aria-hidden="true">→</div>'
     return f'<div class="pp-flow">{arrow.join(steps)}</div>{note}'
 
@@ -1170,10 +1171,10 @@ def paper_overview(paper) -> None:
     titles = [s.title for s in paper.sections]
     pages = paper_pages(paper)
     # 읽은 쪽 수 같은 알림은 제목 줄 오른쪽 설명에 함께(원문까지의 세로 거리를 줄인다)
-    note = f"{clip(paper.title, 70)} · {len(titles)}개 절 · 약 {paper.chars:,}자"
-    if paper.notes:
-        note += " · " + " ".join(paper.notes)
-    st.markdown(sec_head("00", "논문 쪽 고르기", note), unsafe_allow_html=True)
+    count = ss.get("paper_page_count") if ss.get("paper") is paper else None
+    note = f"{len(titles)}개 절" + (f" · PDF {count}쪽" if count else "")
+    tip = f"{paper.title} · 약 {paper.chars:,}자" + (" · " + " ".join(paper.notes) if paper.notes else "")
+    st.markdown(sec_head("00", "논문 쪽 고르기", note, tip), unsafe_allow_html=True)
     with st.container(key="paper_nav"):
         ss.setdefault("paper_page", ss.source.get("page"))     # 입력 칸을 열었다 닫으면 위젯 상태가 지워져 다시 채운다
         labels = {p: (f"{p} · {len(ids)}개 절" if p == "본문" else p) for p, ids in pages.items()}
@@ -1225,9 +1226,14 @@ def paper_overview(paper) -> None:
         st.caption("'처음 나온 곳'은 모든 절을 이어 붙였을 때의 문장 번호예요. 한국어 대응어는 절마다 번역했을 때 그 절의 단어표에 나와요.")
 
 
-def sec_head(num: str, title: str, note: str = "") -> str:
+def info_tip(text: str) -> str:
+    """ⓘ 아이콘: 마우스를 올리거나 Tab으로 가면 설명이 뜬다(자잘한 안내를 화면에 늘 펼쳐 두지 않으려고)."""
+    return f'<span class="pp-info" tabindex="0" role="note" aria-label="{esc(text)}" data-tip="{esc(text)}">ⓘ</span>'
+
+
+def sec_head(num: str, title: str, note: str = "", tip: str = "") -> str:
     return (f'<div class="pp-sec"><div class="pp-sec-title"><span class="pp-sec-num">{num}</span>{esc(title)}</div>'
-            f'<div class="pp-sec-note">{esc(note)}</div></div>')
+            f'<div class="pp-sec-note">{esc(note)}{" " + info_tip(tip) if tip else ""}</div></div>')
 
 
 # ================================================================ 상단 바·소개
@@ -1297,21 +1303,21 @@ def source_flag() -> str:
 def input_panel() -> None:
     ss = st.session_state
     with st.container(key="input_panel"):
-        c1, c2, c5 = st.columns([1.6, 2.4, 2.3], vertical_alignment="center")
+        c1, c2 = st.columns([1.6, 4.7], vertical_alignment="center")   # 개인정보 안내는 이름 옆 ⓘ로
         c1.markdown(f'<div class="pp-input-copy"><div>'
-                    f'<div class="pp-field-label">분석할 논문 넣기</div></div></div>', unsafe_allow_html=True)   # 넣는 방식은 옆 버튼이 말해 준다
+                    f'<div class="pp-field-label">분석할 논문 넣기 '
+                    + info_tip(f"올린 파일·붙여 넣은 글은 서버에 남기지 않고, 읽은 문서와 번역은 이 브라우저에만 저장돼요. "
+                               f"번역할 때만 {engine_name()}로 보내요.") + '</div></div></div>', unsafe_allow_html=True)   # 넣는 방식은 옆 버튼이 말해 준다
         with c2:
             mode = st.segmented_control("입력 방식", MODES, key="input_mode", label_visibility="collapsed") or M_PDF
-        c5.markdown(f'<div class="pp-privacy">{ICON["shield"]}<span>올린 파일·붙여 넣은 글은 서버에 남기지 않고, '
-                    f'읽은 문서와 번역은 이 브라우저에만 저장돼요. 번역할 때만 {engine_name()}로 보내요.</span></div>',
-                    unsafe_allow_html=True)
         clicked = False
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
                 st.markdown(
                             '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으세요</div>'
-                            f'<div class="pp-drop-hint">놓으면 바로 절별로 나눠 분석해요. '
-                            f'{MAX_PDF_MB}MB 이하, 글자를 선택할 수 있는 PDF만 읽을 수 있어요.</div>', unsafe_allow_html=True)
+                            f'<div class="pp-drop-hint">PDF · {MAX_PDF_MB}MB 이하 '
+                            + info_tip("놓으면 바로 절별로 나눠 분석해요. 글자를 선택할 수 있는 PDF만 읽을 수 있어요"
+                                       "(스캔한 이미지 PDF는 불가).") + '</div>', unsafe_allow_html=True)
                 st.file_uploader("논문 PDF", type=["pdf"], key="pdf_file", label_visibility="collapsed",
                                  on_change=on_pdf_drop,
                                  help="스캔한 이미지 PDF는 글자가 없어 읽지 못해요.")
@@ -2244,10 +2250,10 @@ def translation_panel(a, rows_on: bool = True, floats_on: bool = False, where: s
         if res is None:
             # 버튼과 전송 안내를 한 줄로(원문까지의 거리를 줄인다). 보관 정책은 ⓘ에, 전송 사실·개인정보 주의는 늘 보이게
             b1, b2 = (hb, hn) if hb is not None else st.columns([1, 4.2], vertical_alignment="center")
-            b2.markdown(f'<div class="pp-send-note">누르면 영어 문장이 <b>{engine_name()}로 전송</b>돼요. '
-                        '개인정보는 넣지 마세요. <span class="pp-info" title="이 앱은 입력을 저장하지 않지만, 번역 서비스 측의 '
-                        '보관 정책은 그 서비스의 약관을 따라요.">ⓘ</span></div>', unsafe_allow_html=True)
-            if b1.button("번역하기", type="primary", key="translate_btn", use_container_width=True):
+            send = (f"누르면 영어 문장이 {engine_name()}로 전송돼요. 개인정보는 넣지 마세요. "
+                    "이 앱은 입력을 저장하지 않지만, 번역 서비스 측의 보관 정책은 그 서비스의 약관을 따라요.")
+            b2.markdown(f'<div class="pp-send-note">AI 번역 · 참고용 {info_tip(send)}</div>', unsafe_allow_html=True)
+            if b1.button("번역하기", type="primary", key="translate_btn", use_container_width=True, help=send):
                 with st.spinner("번역하는 중…"):
                     ss.translations[(tkey, True)] = run_translate(
                         sents, a, True, file_cache, **dict(zip(("marks", "underlines"), translation_layers(ss.input_text))))
@@ -2305,8 +2311,7 @@ def hero() -> None:
                 '<span class="pp-m hedge" data-tip="추측·가능성: may — 저자가 단정하지 않는 표현">may</span> help smaller models '
                 'use evidence more consistently '
                 '<span class="pp-m reference" data-tip="참조: [4] — 다른 연구를 가리키는 번호">[4]</span>.</p>'
-                '<figcaption>정규식이 칠한 표시예요. 노란색은 추측 표현, 보라 끊긴 밑줄은 참조 번호, 파란 밑줄은 반복 용어예요.'
-                '</figcaption></figure>'
+                '</figure>'
                 '</div></div>', unsafe_allow_html=True)
 
 
@@ -2316,10 +2321,8 @@ def empty_guide() -> None:
              ("2", "절 고르기", "PDF는 Abstract·Introduction처럼 절로 나뉘어요. 읽을 절을 눌러요."),
              ("3", "읽는 길 따라가기", "3줄 뼈대 → 형광펜·밑줄 원문 → 번역 → 흐름도·어려운 단어표 순서로 봐요.")]
     cards = "".join(f'<div class="pp-guide-step"><div class="pp-guide-no">{n}</div><div><b>{t}</b>'
-                    f'<div class="pp-guide-desc">{d}</div></div></div>' for n, t, d in steps)
-    st.markdown(f'<div class="pp-guide">{cards}</div>'
-                '<div class="pp-meta" style="margin-top:8px">자료를 넣으면 3줄 뼈대, 원문·번역, 흐름도와 단어표가 이 아래에 나타나요. '
-                '먼저 둘러보려면 위의 <b>예시 문단으로 보기</b>를 눌러요.</div>', unsafe_allow_html=True)
+                    f'</div></div>' for n, t, d in steps)   # 설명 줄은 뺐다(제목만으로 순서가 보인다)
+    st.markdown(f'<div class="pp-guide">{cards}</div>', unsafe_allow_html=True)
 
 
 def reading_page() -> None:
@@ -2351,7 +2354,7 @@ def reading_page() -> None:
         with st.container(key="card_row"):
             protocol_cards(a)
     else:
-        st.markdown(sec_head("01", f"먼저 읽을 3줄 뼈대{where}", "원문에서 찾은 문장 · 신호 문구와 선택 이유를 함께 표시"),
+        st.markdown(sec_head("01", f"먼저 읽을 3줄 뼈대{where}"),
                     unsafe_allow_html=True)
         cols = st.container(key="card_row").columns(3)
         tr = ss.translations.get((text_key(a.text), True))
@@ -2393,7 +2396,7 @@ def reading_page() -> None:
                    f'{float_cards(s.idx, ctx)}' for s in shown(a))   # 처음 언급한 문장 바로 아래에 표·그림
     en_panel = (f'<div class="pp-panel pp-narrow"><div class="pp-reader-head"><div class="pp-reader-title">'
                 f'<span class="pp-lang">EN</span>영어 원문 <span class="pp-meta">· {range_note(a)}</span></div>'
-                f'<div class="pp-meta">표현에 마우스를 올리거나 Tab으로 이동하면 정의와 규칙이 보여요</div></div>'
+                f'</div>'
                 f'<div class="pp-sents">{rows or "<div class=pp-meta>문장이 없어요.</div>"}</div></div>')
     if mode == "side":
         if current_translation(a) is None:     # 번역 전에는 오른쪽 칸이 통째로 비므로 영어 원문만 한 칸으로
@@ -2421,7 +2424,7 @@ def reading_page() -> None:
     st.markdown('<hr class="pp-end">', unsafe_allow_html=True)   # 본문 끝과 03 보조 자료를 나누는 선
     track_position(user=False)             # 처음 연 위치 등 콜백 없이 바뀐 위치(다음 실행의 브라우저 저장에 실림)
 
-    st.markdown('<div id="pp-03"></div>' + sec_head("03", "이해를 돕는 자료", "흐름도·단어표 — 정규식이 찾은 결과를 한눈에 모은 것"),
+    st.markdown('<div id="pp-03"></div>' + sec_head("03", "이해를 돕는 자료"),
                 unsafe_allow_html=True)
     tr = ss.translations.get((text_key(a.text), True))
     rows = G.build(a, G.korean_marks(tr))
@@ -2434,7 +2437,7 @@ def reading_page() -> None:
         glossary_block(a, rows)
 
     st.markdown('<div class="pp-foot"><span><strong>읽는 길은 정규식이, 판단은 학생이.</strong> '
-                '원문은 수정하거나 요약문으로 대체하지 않습니다.</span><span>번역은 버튼을 누를 때만 · 외부 서비스 전송 안내 포함</span></div>',
+                '원문은 수정하거나 요약문으로 대체하지 않습니다.</span></div>',
                 unsafe_allow_html=True)
     maybe_tutorial()                       # 화면 위 안내는 가리킬 요소가 다 그려진 맨 끝에서
 

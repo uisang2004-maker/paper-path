@@ -33,7 +33,7 @@ def test_start_screen_hides_results_until_input(blank):
     text = "\n".join(m.value for m in blank.markdown if not m.value.lstrip().startswith("<style"))
     assert "끌어다 놓으세요" in text and "논문 넣기" in text
     assert 'class="pp-flow"' not in text and "pp-reader-title" not in text and "먼저 읽을 3줄 뼈대" not in text
-    assert "정규식이 칠한 표시예요" in text and 'class="pp-hero"' in text        # 첫 화면 히어로
+    assert 'class="pp-hero-sample"' in text and 'class="pp-hero"' in text        # 첫 화면 히어로(견본 문장)
     assert blank.session_state["input_mode"] == "논문 PDF"
     assert not any(b.label == "번역하기" for b in blank.button)
 
@@ -694,4 +694,4 @@ def test_logo_goes_home_and_help_in_sticky_bar(at):
     text = at.session_state["input_text"]
     at.button(key="go_home").click().run()
     assert not at.exception and at.session_state["show_input"] is True and at.session_state["page"] == "논문 읽기"
-    assert "정규식이 칠한 표시예요" in md_text(at) and at.session_state["input_text"] == text
+    assert 'class="pp-hero-sample"' in md_text(at) and at.session_state["input_text"] == text
