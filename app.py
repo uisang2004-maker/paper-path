@@ -1313,8 +1313,8 @@ def input_panel() -> None:
         if mode == M_PDF:
             with st.container(key="pdf_drop"):
                 st.markdown(
-                            '<div class="pp-drop-title">PDF 파일을 여기에 끌어다 놓으십시오</div>'
-                            f'<div class="pp-drop-hint">PDF · {MAX_PDF_MB}MB 이하 '
+                            '<div class="pp-drop-title">PDF 파일 가져오기</div>'
+                            f'<div class="pp-drop-hint">{MAX_PDF_MB}MB 이하 '
                             + info_tip("글자를 선택할 수 있는 PDF만 읽습니다. 스캔한 이미지 PDF는 읽지 못합니다.") + '</div>', unsafe_allow_html=True)
                 st.file_uploader("논문 PDF", type=["pdf"], key="pdf_file", label_visibility="collapsed",
                                  on_change=on_pdf_drop,
@@ -2299,8 +2299,8 @@ def hero() -> None:
     """첫 화면 히어로: 왼쪽 소개 문구, 오른쪽은 배경 이미지(static/hero.jpg, 이의상 님이 만든 이미지)."""
     # 앱의 중심은 정규식 분석이고 번역은 참고용이라, 소개 문구도 그 순서로(영문 대문자 머리표는 두지 않는다)
     st.markdown('<div class="pp-hero"><div class="pp-hero-text">'
-                '<h1 class="pp-hero-h1">영어 논문, 어디부터 읽을지<br>먼저 짚어 줍니다.</h1>'
-                '<div class="pp-hero-desc">문제, 방법, 결과 문장과 약어, 추측, 참조 표시를 정규식이 원문에서 찾습니다. '
+                '<h1 class="pp-hero-h1">영어 논문을<br>더 쉽고 편하게.</h1>'
+                '<div class="pp-hero-desc">문제, 방법, 결과 문장을 먼저 짚고 약어와 추측 표현을 원문에 표시합니다. '
                 '번역은 옆에서 돕는 참고용입니다.</div>'
                 # 배지 대신 실제 읽기 화면과 같은 형광펜을 칠한 문장 한 줄(예시 문단의 마지막 문장): 무엇을 해 주는지 바로 보이게
                 '<figure class="pp-hero-sample"><p>These findings suggest that a '
